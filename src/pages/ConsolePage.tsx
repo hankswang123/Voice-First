@@ -2234,7 +2234,7 @@ export function ConsolePage() {
    */
   async function performGoogleSearch(query: string): Promise<Array<{ title: string, url: string }>> {
     try {
-  const response: Response = await fetch(`/api/serp/news?q=${encodeURIComponent(query)}`);
+      const response: Response = await fetch(`/api/serp/news?q=${encodeURIComponent(query)}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -2625,6 +2625,17 @@ export function ConsolePage() {
         if (client.isConnected()) {
           throw new Error(`Already connected, use .disconnect() first`);
         }
+
+        //Test the Ephemeral Key rather than using the static API key
+        //Connect successfully, but model always reply: I'm sorry, but I can't assist with that request.
+        /*
+        const tokenResponse = await fetch("/api/session");
+        const data = await tokenResponse.json();
+        const EPHEMERAL_KEY = data.client_secret.value;     
+        client.realtime.apiKey = EPHEMERAL_KEY;   
+        console.log("Using Ephemeral Key to connect to OpenAI Realtime API:", EPHEMERAL_KEY); 
+        */
+        //End of Ephemeral Key test          
 
         // use mini model by default for saving cost: 'gpt-4o-mini-realtime-preview-2024-12-17'
         // select latest GA Model: 'gpt-realtime' for better quality

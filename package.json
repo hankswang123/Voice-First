@@ -31,15 +31,19 @@
     "react-scripts": "^5.0.1",
     "sass": "^1.93.2"
   },
+  "engines": {
+    "node": ">=18 <21"
+  },
   "scripts": {
-    "dev": "node server.js",
+    "dev": "node local-server.js",
     "relay": "node relay-server/index.js",
-    "start": "concurrently \"react-scripts start\" \"nodemon server.js\"",
-    "debug": "concurrently \"react-scripts start\" \"nodemon --inspect=9229 server.js\"",
+    "start": "concurrently \"react-scripts start\" \"nodemon local-server.js\"",
+    "debug": "concurrently \"react-scripts start\" \"nodemon --inspect=9229 local-server.js\"",
     "build": "react-scripts build",
     "predeploy": "npm run build",
     "dev:all": "concurrently \"npm run relay\" \"npm run dev\"",
-    "start:prod": "npm run build && node server.js"
+    "start:prod": "npm run build && node local-server.js",
+    "start:web": "node local-server.js" 
   },
   "proxy": "http://localhost:3001",
   "browserslist": {

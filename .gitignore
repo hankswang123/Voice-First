@@ -1,3 +1,9 @@
+#test resource file
+public/play/
+public/wordCard/
+*.pdf
+*.wav
+
 # Logs
 logs
 *.log

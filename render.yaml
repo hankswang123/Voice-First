@@ -1,0 +1,48 @@
+# Render Infrastructure as Code
+# Import this file in Render Dashboard to create services.
+# Docs: https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: voice-first-web
+    env: node
+    plan: starter
+    region: oregon # change if you prefer frankfurt/singapore etc.
+    buildCommand: npm install && npm run build
+    startCommand: node local-server.js
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: RECRAFT_API_KEY
+        sync: false
+      - key: RECRAFT_BASE_URL
+        value: https://api.recraft.ai/v1
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: ZHIPUAI_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /api/serp/news # pick a lightweight endpoint or create /health
+
+  - type: web
+    name: voice-first-relay
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install
+    startCommand: node relay-server/index.js
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
+    healthCheckPath: / # WebSocket service has no HTTP handler; leave or adjust
+    # NOTE: WebSocket upgrade will still work; health check may show 404 which is acceptable; alternatively add a tiny HTTP route.
+
+# Optional: If you move to ephemeral keys only, you can remove the relay service above.
