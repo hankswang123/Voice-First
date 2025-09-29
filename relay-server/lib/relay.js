@@ -6,12 +6,22 @@ export class RealtimeRelay {
     this.apiKey = apiKey;
     this.sockets = new WeakMap();
     this.wss = null;
+    // Track the path we mounted on (so connectionHandler can validate correctly)
+    this.allowedPath = '/';
   }
 
   listen(port) {
     this.wss = new WebSocketServer({ port });
     this.wss.on('connection', this.connectionHandler.bind(this));
     this.log(`Listening on ws://localhost:${port}`);
+  }
+
+  // Attach to an existing HTTP/S server (Express) at given path (default /realtime)
+  attach(server, path = '/realtime') {
+    this.allowedPath = path;
+    this.wss = new WebSocketServer({ server, path });
+    this.wss.on('connection', this.connectionHandler.bind(this));
+    this.log(`Attached relay at path ${path}`);
   }
 
   async connectionHandler(ws, req) {
@@ -23,9 +33,9 @@ export class RealtimeRelay {
 
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pathname = url.pathname;
-
-    if (pathname !== '/') {
-      this.log(`Invalid pathname: "${pathname}"`);
+    // Accept only the configured path. When using listen() without a path option, ws module normalizes to '/'.
+    if (pathname !== this.allowedPath && !(this.allowedPath === '/' && pathname === '/')) {
+      this.log(`Invalid pathname: "${pathname}" (expected "${this.allowedPath}")`);
       ws.close();
       return;
     }

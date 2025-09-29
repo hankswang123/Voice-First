@@ -12,6 +12,7 @@ import axios from 'axios';
 import { OpenAI } from "openai";
 import jwt from 'jsonwebtoken';
 import WebSocket from "ws";
+import { RealtimeRelay } from './relay-server/lib/relay.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -497,6 +498,17 @@ app.use((req, res, next) => {
     next();
 });
 
-app.listen(port, () => {
-        console.log(`Server running on port ${port}`);
+const serverInstance = app.listen(port, () => {
+                console.log(`Server running on port ${port}`);
+                if(process.env.OPENAI_API_KEY){
+                    try {
+                        const relay = new RealtimeRelay(process.env.OPENAI_API_KEY);
+                        relay.attach(serverInstance, '/realtime');
+                        console.log('Realtime relay attached at /realtime');
+                    } catch (e){
+                        console.error('Failed to attach realtime relay:', e.message);
+                    }
+                } else {
+                    console.warn('OPENAI_API_KEY not set; realtime relay not started.');
+                }
 });

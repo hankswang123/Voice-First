@@ -8,8 +8,19 @@
  * This will also require you to set OPENAI_API_KEY= in a `.env` file
  * You can run it with `npm run relay`, in parallel with `npm start`
  */
-const LOCAL_RELAY_SERVER_URL: string =
-  process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
+// Determine relay server URL: use explicit env var if provided, otherwise in production
+// derive from current origin + /realtime (attached to Express). During CRA dev, keep blank
+// so that direct OpenAI (dangerouslyAllowAPIKeyInBrowser) path still functions if desired.
+let LOCAL_RELAY_SERVER_URL: string = process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
+if (!LOCAL_RELAY_SERVER_URL) {
+  const isBrowser = typeof window !== 'undefined';
+  if (isBrowser) {
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+    if (!isDev) {
+      LOCAL_RELAY_SERVER_URL = `${window.location.origin.replace(/^http/, 'ws')}/realtime`;
+    }
+  }
+}
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 
@@ -60,7 +71,7 @@ export function ConsolePage() {
   }*/
 
   //Timer of SearchBox animation effect for Youtube Video
-  //let animation: NodeJS.Timeout;    
+  let animation: NodeJS.Timeout;    
 
   //Comment out orinial API Key Prompt and 
   //Postpone the Prompt to first unmute click(will enable audio copilot)
@@ -1357,6 +1368,23 @@ export function ConsolePage() {
     }    
 
   }
+  
+  const handleKeywordClick = (event: SpeedControlClickEvent, keyword: string, currentTime: number, endTime: number, page: number): void => {
+    event.stopPropagation(); // Prevent the event from bubbling up to the progress bar
+
+    setKeyword(keyword);
+    if (audioRef.current) {
+      audioRef.current.currentTime = currentTime;
+
+      goToPage({ pageNumber: page });
+      const pdfViewer = document.getElementById("pdfFile");
+      if (pdfViewer) {
+        //(pdfViewer as HTMLObjectElement).data = pdfFilePath + `?t=` + (new Date()).getTime() + `#page=` + page;//&t=${new Date().getTime()}
+        (pdfViewer as HTMLObjectElement).data = pdfFilePath1 + `?t=` + (new Date()).getTime() + `#page=` + page;//&t=${new Date().getTime()}
+        console.log((pdfViewer as HTMLObjectElement).data);
+      }
+    }
+  };    
 
   const repeatPrevious = () => {
 
@@ -1364,10 +1392,9 @@ export function ConsolePage() {
       const nextCaption = audioCaptions.current[index + 1];
       return currentTime >= caption.time && (!nextCaption || currentTime < nextCaption.time);
     });      
-    console.log('Current Caption Index:', currentCaptionIndex);
-    if(currentCaptionIndex > 0 && currentCaptionIndex - 2 >= 0){
-      const previousCaption = audioCaptions.current[currentCaptionIndex - 2];
-      console.log('Previous Caption:', previousCaption);
+
+    if(currentCaptionIndex > 0){
+      const previousCaption = audioCaptions.current[currentCaptionIndex - 1];
       audioRef.current.currentTime = previousCaption.time;      
     }   
   }  
@@ -2003,15 +2030,14 @@ export function ConsolePage() {
     const closeButton = document.getElementById('closePopup');
     const popupOverlay = document.getElementById('popupOverlay');
     const videoFrame = document.getElementById('videoFrame');  
-    //const searchBox = document.getElementById('searchBox');  
+    const searchBox = document.getElementById('searchBox');  
     const flashcardsContainer = document.getElementById('flashcardsContainer');
 
     const closeKeywords = document.getElementById('closeKeywords');
     const floatingKeywords = document.getElementById('floatingKeywords');
     const openKeywords = document.getElementById('openKeywords');
 
-    //if( closeButton && popupOverlay && videoFrame && searchBox) { 
-    if( closeButton && popupOverlay && videoFrame ) { 
+    if( closeButton && popupOverlay && videoFrame && searchBox) { 
     // Close the popup and stop the video
       closeButton.addEventListener('click', () => {
         (videoFrame as HTMLIFrameElement).src = '';
@@ -2020,7 +2046,7 @@ export function ConsolePage() {
           (flashcardsContainer as HTMLDivElement).style.display = 'none';
         }
 
-        //(searchBox as HTMLInputElement).value = ''; // Clear the search box
+        (searchBox as HTMLInputElement).value = ''; // Clear the search box
       });
     }    
 
@@ -2048,7 +2074,7 @@ export function ConsolePage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
 
-      //const searchBox = document.getElementById('searchBox');        
+      const searchBox = document.getElementById('searchBox');        
       const chatInputBox = document.getElementById('chatInputBox'); 
       const menuInput = document.getElementById('menuInput');   
       //const webRTCMessage = document.getElementById('webRTCMessage');    
@@ -2097,7 +2123,7 @@ export function ConsolePage() {
             closeRightArrowNew();
           }
 
-          //(searchBox as HTMLInputElement).value = ''; // Clear the search box
+          (searchBox as HTMLInputElement).value = ''; // Clear the search box
 
         }
       }
@@ -2121,7 +2147,7 @@ export function ConsolePage() {
       }         
       else if (e.code === 'Enter') { 
         // When Enter is hit in the search box, search for the video       
-        /*if (e.target === searchBox) {
+        if (e.target === searchBox) {
           e.preventDefault();
 
           const searchValue = (searchBox as HTMLInputElement).value.trim();
@@ -2135,10 +2161,10 @@ export function ConsolePage() {
                     playPauseBtnRef.current.click(); // Trigger the button click event
                   }  
                 }*/
-            /*  }
+              }
               showVideofromYoutube(searchValue);
             }
-          }  */      
+          }        
         }       
       };
   
@@ -2149,7 +2175,6 @@ export function ConsolePage() {
     };
   }, []);
 
-  /*
   const setTimerforSearchBox = (searchValue: string) => {
     const searchBox = document.getElementById('searchBox');
 
@@ -2160,9 +2185,8 @@ export function ConsolePage() {
         count = (count + 1) % (maxDots + 1); // Cycle between 0, 1, 2, 3
         (searchBox as HTMLInputElement).value = searchValue + ".".repeat(count);
     }, interval);       
-  }*/
+  }
 
-  /*
   const clearTimerforSearchBox = (info: string) => {
     const searchBox = document.getElementById('searchBox');
 
@@ -2173,7 +2197,7 @@ export function ConsolePage() {
         (searchBox as HTMLInputElement).value = info; // Clear the search box
       }
     }    
-  }*/
+  }
 
   const toggleAudio = async () => {
     if(isAudioExisting === false){ return; }
@@ -2297,7 +2321,7 @@ export function ConsolePage() {
    */
   const showVideofromYoutube = async (query: string) => {
 
-    //const searchBox = document.getElementById('searchBox');
+    const searchBox = document.getElementById('searchBox');
     const popupOverlay = document.getElementById('popupOverlay');
     const videoFrame = document.getElementById('videoFrame');
     const imageFrame = document.getElementById('imageFrame');
@@ -2328,8 +2352,8 @@ export function ConsolePage() {
           (popupContent as HTMLIFrameElement).className = 'popup-content-video';
           if (popupOverlay){
             popupOverlay.style.display = 'flex';
-            //clearTimerforSearchBox(query);
-            //(searchBox as HTMLInputElement).style.color = 'blue'; // Reset the color
+            clearTimerforSearchBox(query);
+            (searchBox as HTMLInputElement).style.color = 'blue'; // Reset the color
 
             // Insert the video searched into the conversation list at the same time
             chatRef.current.updateVideo(`<iframe width="100%" height="95%" src="${embedUrl}" style={{ borderRadius: '9px'}} allowfullscreen></iframe>`);
@@ -2355,16 +2379,16 @@ export function ConsolePage() {
 
           }
         } else {
-          //clearTimerforSearchBox('Error occurred during video search.');
+          clearTimerforSearchBox('Error occurred during video search.');
           console.log('Failed to convert to embeddable URL.');
         }
       } else {
-        //clearTimerforSearchBox('No results found.');
+        clearTimerforSearchBox('No results found.');
         console.log('No results found.');
       }
     })
     .catch((error) => {
-      //clearTimerforSearchBox('Error occurred during YouTube search');
+      clearTimerforSearchBox('Error occurred during YouTube search');
       console.error('Error occurred during YouTube search:', error);
     });                    
   }
@@ -2812,7 +2836,7 @@ export function ConsolePage() {
 
         // To show the loading animation in the search box when searching for the video
         // Clear the search box and show the loading animation
-        /*const searchBox = document.getElementById('searchBox');  
+        const searchBox = document.getElementById('searchBox');  
         if (searchBox) {
           (searchBox as HTMLInputElement).value = query; // Clear the search box
 
@@ -2824,7 +2848,7 @@ export function ConsolePage() {
               (searchBox as HTMLInputElement).value = query + ".".repeat(count);
           }, interval);            
 
-        }  */      
+        }        
 
         await showVideofromYoutube(query);        
         //return imageDescriptionRef.current;
@@ -3496,6 +3520,7 @@ export function ConsolePage() {
               borderRadius: '0.3125em',
               whiteSpace: 'nowrap',
             }}
+            //onClick={(e) => handleKeywordClick(e, key, value1, value2, value3)} // Directly play the keyword segment
             onClick={(e) => loopKeywordPlay(e, key, value1, value2, value3)} // Loop play the keyword segment
           >
             {index+1}.{key} {/* Display the key */}
@@ -3856,7 +3881,7 @@ export function ConsolePage() {
         {isCaptionVisible && ( 
           <div id='captionDisplay' className="caption-display"
                dangerouslySetInnerHTML={{ __html: currentCaption }}
-               style={{ fontSize: '3.38em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
+               style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
                onClick={() => { /*toggleAudio()*/ }}
           ></div> )
         } 
@@ -3925,7 +3950,15 @@ export function ConsolePage() {
               backgroundColor: playbackRate === 1.2 ? '#666' : '#ccc', // Darker if active
               color: playbackRate === 1.2 ? '#fff' : '#000', // Adjust text color for contrast
               borderRadius: '0.3125em',
-            }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div>    
+            }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div>  
+            {/* Loop button to loop the current audio 
+            <div></div> 
+            <div className="speed-control"         style={{
+              display: 'none',
+              backgroundColor: isLoop === true ? '#666' : '#ccc', // Darker if active
+              color: isLoop === true ? '#fff' : '#000', // Adjust text color for contrast
+              borderRadius: '0.3125em',
+            }}    onClick={(e) => handleLoopClick(e)}>Loop</div>    */}     
                                        
             <div><span className="separator">|</span></div>
 
@@ -3983,7 +4016,6 @@ export function ConsolePage() {
               borderRadius: '0.3125em',
             }}    onClick={(e) => handleClearKeyword(e)} title='Clear Keyword Play Looping'>{keyword === '' ? 'Select a Keyword to Dive in' : keyword }</div> 
             {/* Test: Place the search box for video at the right-down of progress bar area */}  
-            {/*
             <div style={{position: 'fixed', transform:'translateX(41.5em)', bottom: '1px'}}>
               <input id="searchBox" 
                     type="text"                      
@@ -3995,7 +4027,7 @@ export function ConsolePage() {
                                       (searchBox as HTMLInputElement).style.color = 'blue'; 
                                     }} 
               /> 
-            </div>  */}  
+            </div>  
           </div>
 
           {/* Display the current play time and Total time */}
