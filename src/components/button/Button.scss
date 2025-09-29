@@ -1,0 +1,95 @@
+[data-component='Button'] {
+  display: flex;
+  align-items: center;
+  //gap: 8px;
+  gap: 0.1em; /* Changed from 8px to 0.5em */
+  font-family: 'Roboto Mono', monospace;
+  //font-size: 12px;
+  font-size: 1.2em; /* Changed from 12px to 1em */
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  border: none;
+  background-color: #ececf1;
+  color: #101010;
+  //border-radius: 1000px;
+  border-radius: 2em; /* Changed from 1000px to 2em */
+  //padding: 8px 24px;
+  padding: 0.5em 1.5em; /* Changed from 8px 24px to 0.5em 1.5em */
+  //min-height: 42px;
+  min-height: 2.625em; /* Changed from 42px to 2.625em */
+  transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out;
+  outline: none;
+
+  &.button-style-action {
+    background-color: #101010;
+    color: #ececf1;
+    &:hover:not([disabled]) {
+      background-color: #404040;
+    }
+  }
+
+  &.button-style-alert {
+    background-color: #f00;
+    color: #ececf1;
+    &:hover:not([disabled]) {
+      background-color: #f00;
+    }
+  }
+
+  &.button-style-flush {
+    background-color: rgba(255, 255, 255, 0);
+  }
+
+  &[disabled] {
+    color: #999;
+  }
+
+  &:not([disabled]) {
+    cursor: pointer;
+  }
+
+  &:hover:not([disabled]) {
+    background-color: #d8d8d8;
+  }
+
+  &:active:not([disabled]) {
+    transform: translateY(1px);
+  }
+
+  .icon {
+    display: flex;
+    &.icon-start {
+      //margin-left: -8px;
+      //margin-left: 5px;
+      margin-left: 0.3125em; /* Changed from 5px to 0.3125em */
+    }
+    &.icon-end {
+      //margin-right: -8px;
+      margin-right: 0px;
+    }
+    svg {
+      //width: 16px;
+      //height: 16px;      
+      //width: 20px;
+      //height: 20px;
+      width: 1.3em; /* Changed from 20px to 1em */
+      height: 1.3em; /* Changed from 20px to 1em */      
+    }
+  }
+
+  &.icon-red .icon {
+    color: #cc0000;
+  }
+  &.icon-green .icon {
+    color: #009900;
+  }
+  &.icon-grey .icon {
+    color: #909090;
+  }
+  &.icon-fill {
+    svg {
+      fill: currentColor;
+    }
+  }
+}

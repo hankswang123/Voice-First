@@ -1,0 +1,57 @@
+{
+  "name": "voice-first",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@hankswang123/realtime-api-beta": "github:hankswang123/openai-realtime-api-beta",
+    "axios": "^1.12.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^5.23.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-feather": "^2.0.10",
+    "react-markdown": "^10.1.0",
+    "react-pdf": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/html2canvas": "^0.5.35",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.14",
+    "@types/react-dom": "^19.1.9",
+    "@types/react-pdf": "^6.2.0",
+    "concurrently": "^9.0.1",
+    "nodemon": "^3.1.10",
+    "react-scripts": "^5.0.1",
+    "sass": "^1.93.2"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "relay": "node relay-server/index.js",
+    "start": "concurrently \"react-scripts start\" \"nodemon server.js\"",
+    "debug": "concurrently \"react-scripts start\" \"nodemon --inspect=9229 server.js\"",
+    "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "dev:all": "concurrently \"npm run relay\" \"npm run dev\"",
+    "start:prod": "npm run build && node server.js"
+  },
+  "proxy": "http://localhost:3001",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "Zebra": [26, 56, 2],
+    "Markhor": [58, 90, 4],
+    "Snow Bird": [93, 127, 6],
+    "Snowshoe Hare": [128, 164, 12],
+    "Walrus": [166, 218, 18],
+    "Venus": [220, 247, 20],
+    "Mandrill": [252, 306, 24],
+    "Mallard Ducks": [314, 360, 26],
+    "Purple Sea Urchin": [356, 410, 28],
+    "Caracal": [411, 458, 30],
+    "Raccoon Dog": [459, 529, 32],
+    "Strawberry Frog": [535, 579, 34]
+  }
