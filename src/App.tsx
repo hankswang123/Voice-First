@@ -1,12 +1,15 @@
 import { ConsolePage } from './pages/ConsolePage';
 import './App.scss';
 import { pdfjs } from 'react-pdf';
+import 'pdfjs-dist/build/pdf.worker.min.mjs';
 
-
+/*
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
-).toString();
+).toString();*/
+
+pdfjs.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`;
 
 console.log('pdfjs.version=', pdfjs.version);
 console.log('import.meta.url=', import.meta.url);
