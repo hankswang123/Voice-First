@@ -1,0 +1,17 @@
+{
+    "Owls": [12, 43, 2],
+    "Armadillo": [44, 85, 4],
+    "Orange Namings": [100, 113, 5],
+    "Orangutan": [120, 143, 6],
+    "Kooky Creature Features": [182, 269, 10],
+    "Hyenas": [270, 302, 12],
+    "Land and Water": [303, 406, 16],
+    "Deer": [407, 455, 18],
+    "Corithosaurus": [362, 417, 22],
+    "Arctic Wolf": [541, 561, 26, 26],
+    "Japanese Macaque": [561, 572, 28],
+    "Harlequin Ghost Pipefish": [466, 482, 30],
+    "Spring Peeper": [483, 503, 32],
+    "Red Bellied Woodpecker": [504, 525, 34],
+    "Pronghorn": [526, 542, 36]
+}

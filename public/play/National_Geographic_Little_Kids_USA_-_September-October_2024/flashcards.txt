@@ -1,0 +1,140 @@
+[
+  {
+    "front": "Why are owls awake at night?",
+    "back": "Owls are awake at night because they hunt small animals that come out at night, as those animals sleep during the day.",
+    "front_translation": "为什么猫头鹰晚上是醒着的？",
+    "back_translation": "猫头鹰在夜里醒着，因为它们要捕捉夜间出来的小动物；这些小动物白天睡觉。"
+  },
+  {
+    "front": "How long is a pink fairy armadillo?",
+    "back": "A pink fairy armadillo is about as long as your hand.",
+    "front_translation": "粉红仙女犰狳有多长？",
+    "back_translation": "粉红仙女犰狳大约有一只手那么长。"
+  },
+  {
+    "front": "What does a pink fairy armadillo eat?",
+    "back": "A pink fairy armadillo eats bugs.",
+    "front_translation": "粉红仙女犰狳吃什么？",
+    "back_translation": "它吃昆虫。"
+  },
+  {
+    "front": "What protects the pink fairy armadillo from hungry animals?",
+    "back": "A shell that covers its head, back, and behind protects it from hungry animals.",
+    "front_translation": "什么保护粉红仙女犰狳不被别的动物伤害？",
+    "back_translation": "覆盖其头部、背部和后部的甲壳保护它免受其他动物的侵害。"
+  },
+  {
+    "front": "Where do pink fairy armadillos live?",
+    "back": "They live in Argentina.",
+    "front_translation": "粉红仙女犰狳生活在哪里？",
+    "back_translation": "它们生活在阿根廷。"
+  },
+  {
+    "front": "What do baby orangutans learn from their moms?",
+    "back": "Baby orangutans learn to hang, climb, find food, and build nests by watching and imitating their moms.",
+    "front_translation": "幼年红毛猩猩从妈妈那里学到什么？",
+    "back_translation": "它们通过观察并模仿妈妈学会悬挂、攀爬、找食物和搭巢。"
+  },
+  {
+    "front": "What do orangutans mostly eat?",
+    "back": "Orangutans eat mostly fruit, but also bark, leaves, and roots.",
+    "front_translation": "红毛猩猩主要吃什么？",
+    "back_translation": "它们主要吃水果，也会吃树皮、树叶和根。"
+  },
+  {
+    "front": "Where are baby orangutans born?",
+    "back": "Babies are born in nests high up in trees.",
+    "front_translation": "红毛猩猩宝宝在哪里出生？",
+    "back_translation": "它们在高高的树上巢穴里出生。"
+  },
+  {
+    "front": "On which islands do orangutans live?",
+    "back": "Orangutans live on the islands of Borneo and Sumatra.",
+    "front_translation": "红毛猩猩生活在哪些岛屿？",
+    "back_translation": "它们生活在婆罗洲和苏门答腊。"
+  },
+  {
+    "front": "What do hyenas do to protect their cubs?",
+    "back": "Adult hyenas chase away lions and some older hyenas watch over the cubs while the group hunts.",
+    "front_translation": "鬣狗为保护幼崽会做什么？",
+    "back_translation": "成年鬣狗会把狮子赶走；群体外出觅食时有年长鬣狗守护幼崽。"
+  },
+  {
+    "front": "How do hyena cubs learn to hunt?",
+    "back": "Hyena cubs learn to hunt by wrestling and playing chase with each other.",
+    "front_translation": "鬣狗幼崽如何学会捕猎？",
+    "back_translation": "它们通过互相摔跤和追逐游戏来练习捕猎。"
+  },
+  {
+    "front": "In which country do some hyenas live?",
+    "back": "Some hyenas live in Botswana.",
+    "front_translation": "有些鬣狗生活在哪个国家？",
+    "back_translation": "有些鬣狗生活在博茨瓦纳。"
+  },
+  {
+    "front": "What happens to a roe deer’s antlers every winter?",
+    "back": "Every winter, male roe deer grow new antlers, which they shed in the fall.",
+    "front_translation": "雄性狍子的鹿角每到冬天会怎样？",
+    "back_translation": "每年冬天雄性狍子长出新鹿角，并在秋天脱落。"
+  },
+  {
+    "front": "What is the soft skin covering new antlers called?",
+    "back": "The soft skin covering new antlers is called velvet.",
+    "front_translation": "覆盖在新鹿角上的柔软皮层叫什么？",
+    "back_translation": "覆盖新鹿角的柔软皮层叫“茸皮”。"
+  },
+  {
+    "front": "In which countries do roe deer live?",
+    "back": "Roe deer live in Scotland, England, and Wales.",
+    "front_translation": "狍子生活在哪些国家？",
+    "back_translation": "它们生活在苏格兰、英格兰和威尔士。"
+  },
+  {
+    "front": "How does Corythosaurus possibly use its crest?",
+    "back": "When Corythosaurus breathed in, air traveled through its crest, which might have made its sounds louder.",
+    "front_translation": "冠龙可能怎样利用它的头冠？",
+    "back_translation": "当冠龙吸气时空气经过头冠通道，可能让它的叫声更响亮。"
+  },
+  {
+    "front": "What kind of dinosaur is Corythosaurus?",
+    "back": "Corythosaurus is part of a group of dinosaurs called crested duckbills.",
+    "front_translation": "冠龙属于哪类恐龙？",
+    "back_translation": "冠龙属于一种称为“有冠鸭嘴龙”的恐龙。"
+  },
+  {
+    "front": "What does an arctic wolf’s fur help it do?",
+    "back": "The arctic wolf’s long, thick fur helps keep it warm in the cold Arctic.",
+    "front_translation": "北极狼的皮毛帮助它做什么？",
+    "back_translation": "北极狼又长又厚的皮毛帮助它在寒冷环境中保暖。"
+  },
+  {
+    "front": "Where do Japanese macaques live in the wild?",
+    "back": "Japanese macaques live in the wild in Japan.",
+    "front_translation": "日本猕猴在野外生活在哪里？",
+    "back_translation": "日本猕猴在野外生活在日本。"
+  },
+  {
+    "front": "How does a harlequin ghost pipefish eat?",
+    "back": "It uses its long nose like a straw to suck tiny creatures from the water.",
+    "front_translation": "丑角幽灵海龙鱼如何进食？",
+    "back_translation": "它用像吸管一样的长嘴从水中吸入微小生物。"
+  },
+  {
+    "front": "What do spring peepers sound like when they gather?",
+    "back": "When hundreds gather to lay eggs, their calls can sound like sleigh bells.",
+    "front_translation": "春鸣蛙聚集时听起来像什么？",
+    "back_translation": "当成百上千只聚在一起产卵时，它们的叫声听起来像雪橇铃。"
+  },
+  {
+    "front": "How does a red-bellied woodpecker catch insects?",
+    "back": "It pokes its long, sticky tongue into tree holes to capture insects.",
+    "front_translation": "红腹啄木鸟怎样抓住昆虫？",
+    "back_translation": "它把又长又黏的舌头伸进树洞里捕捉昆虫。"
+  },
+  {
+    "front": "Which animal is the only one faster than a pronghorn?",
+    "back": "The only animal faster than a pronghorn is a cheetah.",
+    "front_translation": "哪种动物比叉角羚更快？",
+    "back_translation": "只有猎豹比叉角羚更快。"
+  }
+]

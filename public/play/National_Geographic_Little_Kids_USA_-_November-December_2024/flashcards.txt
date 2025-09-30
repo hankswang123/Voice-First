@@ -1,0 +1,22 @@
+[
+    { "front": "In which country does the zebra featured in the magazine live?", "back": "Zambia." },
+    { "front": "In which country does the markhor featured in the magazine live?", "back": "Pakistan." },
+    { "front": "Where do snow petrels build their nests?", "back": "In Antarctica." },
+    { "front": "What do snow petrels eat besides fish?", "back": "Shrimp-like animals called krill." },
+    { "front": "Why do zebras have stripes, according to the magazine?", "back": "Stripes make it hard for biting flies to see the zebra, so the flies look for another animal to bite." },
+    { "front": "What is special about a snowshoe hare's feet?", "back": "They are big, furry, and webbed, which helps them stay warm, leap away from predators, and not sink into deep snow." },
+    { "front": "In which country do many snowshoe hares live?", "back": "Canada." },
+    { "front": "What helps a walrus climb out of the water onto ice?", "back": "Its two long tusks, which hook into the floating ice." },
+    { "front": "What is the function of a walrus's whiskers?", "back": "They wiggle in the sand on the ocean floor like fingertips to feel for hidden food such as clams and snails." },
+    { "front": "Which planet is described as the hottest in our solar system?", "back": "Venus." },
+    { "front": "What makes Venus so hot?", "back": "Its thick cloud atmosphere holds in heat like a blanket." },
+    { "front": "What weather does the description 'I fall from the sky and make great puddles to splash in' refer to?", "back": "Rain." },
+    { "front": "Which animal has horns that look like giant screws?", "back": "The markhor." },
+    { "front": "What adaptation keeps walruses warm in icy Arctic waters?", "back": "A thick layer of blubber (fat) under their skin." },
+    { "front": "What do walruses use their flippers for?", "back": "To crawl on land and propel themselves through water while swimming." },
+    { "front": "What do snowshoe hares eat during warmer months that requires them to reach upward?", "back": "Leafy greens from tall bushes and shrubs." },
+    { "front": "How do snow petrels hunt for fish in icy waters?", "back": "They hover just above the surface and dive in to catch fish." },
+    { "front": "What is the main difference between a snowshoe hare and a rabbit mentioned in the text?", "back": "Snowshoe hares are not rabbits — they’re a different species with distinct adaptations like seasonal coat color change." },
+    { "front": "What environmental challenge do snowshoe hares’ big feet help them overcome?", "back": "Walking and leaping on deep, soft snow without sinking." },
+    { "front": "Why might biting flies avoid landing on a zebra even when nearby?", "back": "The stripes visually confuse the flies, making it difficult for them to recognize the zebra as a solid landing target." }
+]

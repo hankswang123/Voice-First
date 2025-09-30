@@ -1407,8 +1407,8 @@ export function ConsolePage() {
       return currentTime >= caption.time && (!nextCaption || currentTime < nextCaption.time);
     });      
 
-    if(currentCaptionIndex > 0){
-      const previousCaption = audioCaptions.current[currentCaptionIndex - 1];
+    if(currentCaptionIndex > 0 && currentCaptionIndex - 2 >= 0){
+      const previousCaption = audioCaptions.current[currentCaptionIndex - 2];
       audioRef.current.currentTime = previousCaption.time;      
     }   
   }  
