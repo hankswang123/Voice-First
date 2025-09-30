@@ -9,6 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();*/
 
+//workerSrc must be has to be set this way when deploying to render.com
 pdfjs.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`;
 
 console.log('pdfjs.version=', pdfjs.version);

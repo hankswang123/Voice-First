@@ -4013,8 +4013,10 @@ export function ConsolePage() {
             }}    onClick={(e) => handleVolumeControlClick(e, 1.0)}>Louder</div>   
             <div><span className="separator">|</span></div>
             <div title='Show Flashcards'><Layers color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleFlashcards} /></div>
-            <div><span className="separator">|</span></div>
+            {/* Quiz featue is not ready yet
+            <div><span className="separator">|</span></div>            
             <div title='Have a Quiz'><HelpCircle color='red' style={{ width: '17px', height: '17px' }} /></div>            
+            */}
             <div><span className="separator" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>|</span></div>
             <div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
               <div title={keyword === '' ? 'Select a Keyword to Dive in' : '' }><BookOpen color='blue' style={{ width: '17px', height: '17px' }} /></div>
