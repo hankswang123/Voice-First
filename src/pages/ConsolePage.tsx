@@ -168,7 +168,20 @@ export function ConsolePage() {
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const [isLoop, setIsLoop] = useState(false);
 
-  const [pdfFilePath1, setpdfFilePath1] = useState(`./play/${magzines[0]}/${magzines[0]}.pdf`);
+  // Use absolute path for PDF so production build (served from /) resolves correctly.
+  const [pdfFilePath1, setpdfFilePath1] = useState(`/play/${magzines[0]}/${magzines[0]}.pdf`);
+  // Debug: preflight HEAD request to surface any 404 early (removed in production when stable)
+  useEffect(() => {
+    if (!pdfFilePath1) return;
+    (async () => {
+      try {
+        const r = await fetch(pdfFilePath1, { method: 'HEAD' });
+        console.log('[PDF][HEAD]', pdfFilePath1, 'status=', r.status, 'ct=', r.headers.get('content-type'));
+      } catch (e) {
+        console.error('[PDF][HEAD] failed', pdfFilePath1, e);
+      }
+    })();
+  }, [pdfFilePath1]);
   const [audioFilePath1, setaudioFilePath1] = useState(`./play/${magzines[0]}/${magzines[0]}.wav`);
   const [isAudioExisting, setIsAudioExisting] = useState(false);
   const [isScriptExisting, setIsScriptExisting] = useState(false);
@@ -616,7 +629,8 @@ export function ConsolePage() {
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
 
-    setpdfFilePath1(`./play/${newMagzine}/${newMagzine}.pdf`);
+  // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
+  setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
 
     // check whether the audio file exists
     const placeholder = 'hello';
@@ -3673,7 +3687,14 @@ export function ConsolePage() {
                       transformOrigin: 'top center', // Set the origin for the transform                    
                 }}>
             {/*<Document file={pdfFilePath} onLoadSuccess={onDocumentLoadSuccess}>*/}
-            <Document file={pdfFilePath1} onLoadSuccess={onDocumentLoadSuccess}>
+            <Document
+              file={pdfFilePath1}
+              onLoadSuccess={(pdf) => { console.log('[PDF] load success pages=', pdf.numPages, 'file=', pdfFilePath1); onDocumentLoadSuccess(pdf); }}
+              onLoadError={(err) => { console.error('[PDF] load error', pdfFilePath1, err); }}
+              // Use rest args to satisfy react-pdf's OnSourceSuccess type (which can supply multiple params)
+              onSourceSuccess={(...args) => { console.log('[PDF] source success', ...args); }}
+              onSourceError={(err) => { console.error('[PDF] source error', err); }}
+            >
               {/* Page Rendering */}
               {getPagePairs(renderedPages).map((pagePair, index) => {
                   // 确保 ref 存在
