@@ -3786,7 +3786,7 @@ export function TabletLayout() {
                             renderAnnotationLayer={true}
                             onLoadSuccess={() => onPageLoadSuccess({ pageNumber })}
                             loading={<p>Loading page {pageNumber}...</p>}
-                            width={isTwoPageView ? 430 : 860}
+                            width={isTwoPageView ? 640 : 960}
                           />
                         </div>
                       ))}
