@@ -29,9 +29,9 @@ import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {Layers, HelpCircle, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
+import {Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
-import './ConsolePage.scss';
+import './DesktopLayout.scss';
 import './AnnotationLayer.css';
 import './TextLayer.css';
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
@@ -55,7 +55,7 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export function ConsolePage() {
+export function DesktopLayout() {
   /**
    * Ask user for API Key
    * If we're using the local relay server, we don't need this
@@ -914,11 +914,14 @@ export function ConsolePage() {
 
     if((splitter as HTMLDivElement).style.display === 'flex'){
       //(splitter as HTMLDivElement).style.display = 'none';
-      //rightRef.current.style.display = 'none';    
+      //rightRef.current.style.display = 'none';  
+      
+      chatBot.style.display = 'none';
+      /*
       if(conversationDivRef.current.style.display === 'none') {
         chatBot.style.display = 'none';
         conversationDivRef.current.style.display = 'flex';        
-      }
+      }*/
     }
     else{
       (splitter as HTMLDivElement).style.display = 'flex';
@@ -3472,7 +3475,7 @@ export function ConsolePage() {
    * Render the application
    */
   return (
-    <div data-component="ConsolePage">
+    <div data-component="deskLayout">
       
       {/* Popup Layer for display the video from youtube search triggered by Realtime API  */}      
       <div id="popupOverlay" className="popup-overlay">

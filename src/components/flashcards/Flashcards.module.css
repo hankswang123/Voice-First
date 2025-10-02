@@ -93,7 +93,7 @@
 .translationBadge {
   position: absolute;
   left: 20px;
-  bottom: 3px;
+  bottom: 45px;
   background: rgba(0,0,0,0.78);
   color:#fff;
   padding:6px 10px;
@@ -105,6 +105,14 @@
   backdrop-filter: blur(4px);
   animation: fadeIn .16s ease;
   white-space: pre-wrap;
+  z-index: 3; /* ensure above face text and not hidden */
+}
+/* Back face variant: match white card styling */
+.back .translationBadge {
+  background: rgba(255,255,255,0.92);
+  color: #000;
+  /*border: 0px solid #d0d0d0;*/
+  backdrop-filter: none; /* crisper on white */
 }
 @keyframes fadeIn {
   from { opacity:0; transform: translateY(4px); }
@@ -130,13 +138,11 @@
 }
 
 .front {
-  composes: face;
   background: #333;
   color: #fff;
 }
 
 .back {
-  composes: face;
   background: #fff;
   color: #000;
   transform: rotateY(180deg);
@@ -182,3 +188,23 @@
 .counter {
   font-size: 1rem;
 }
+
+/* Remove (hide) focus rectangles for buttons and card */
+.flashcard:focus,
+.navButton:focus,
+.voiceButton:focus,
+.translateButton:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* If later you want an accessible keyboard-only indicator, uncomment:
+.flashcard:focus-visible,
+.navButton:focus-visible,
+.voiceButton:focus-visible,
+.translateButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.45);
+  border-radius: 6px;
+}
+*/

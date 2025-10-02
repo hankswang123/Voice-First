@@ -138,8 +138,12 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
     return sel.toString().trim().length > 0;
   };
 
-    // Immediate flip helper
-  const flipNow = () => setFlipped(f => !f);
+    // Immediate flip helper - also hide translation when flipping
+  const flipNow = () => {
+    if (showTranslation) setShowTranslation(false);
+    if (isTranslating) setIsTranslating(false);
+    setFlipped(f => !f);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if ((e.key === 'Enter' || e.key === ' ') && !hasActiveSelection()) {
@@ -194,13 +198,17 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
 
   const next = useCallback(() => {
     setFlipped(false);
+    if (showTranslation) setShowTranslation(false);
+    if (isTranslating) setIsTranslating(false);
     setIndex(i => (i + 1) % data.length);
-  }, [data.length]);
+  }, [data.length, showTranslation, isTranslating]);
 
   const prev = useCallback(() => {
     setFlipped(false);
+    if (showTranslation) setShowTranslation(false);
+    if (isTranslating) setIsTranslating(false);
     setIndex(i => (i - 1 + data.length) % data.length);
-  }, [data.length]);
+  }, [data.length, showTranslation, isTranslating]);
 
   //const card = data[index];
 
@@ -217,8 +225,18 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
         //aria-label="Flashcard"
         aria-label={`Flashcard ${index + 1} of ${data.length}`}
       >
-        <div className={styles.front}>{card.front}</div>
-        <div className={styles.back}>{card.back}</div>
+        <div className={`${styles.face} ${styles.front}`}>
+          {card.front}
+          {showTranslation && !flipped && card.front_translation && (
+            <div className={styles.translationBadge} aria-live="polite">{card.front_translation}</div>
+          )}
+        </div>
+        <div className={`${styles.face} ${styles.back}`}>
+          {card.back}
+          {showTranslation && flipped && card.back_translation && (
+            <div className={styles.translationBadge} aria-live="polite">{card.back_translation}</div>
+          )}
+        </div>
 
         <button
           type="button"
@@ -246,12 +264,6 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
         >
           {(isTranslating || showTranslation) ? <Square size={16} /> : <Globe size={16} />}
         </button>
-
-        {showTranslation && currentSideTranslation && (
-          <div className={styles.translationBadge}>
-            {currentSideTranslation}
-          </div>
-        )}
 
       </div>
       <div className={styles.controls}>

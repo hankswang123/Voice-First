@@ -1,22 +1,122 @@
 [
-    { "front": "In which country does the zebra featured in the magazine live?", "back": "Zambia." },
-    { "front": "In which country does the markhor featured in the magazine live?", "back": "Pakistan." },
-    { "front": "Where do snow petrels build their nests?", "back": "In Antarctica." },
-    { "front": "What do snow petrels eat besides fish?", "back": "Shrimp-like animals called krill." },
-    { "front": "Why do zebras have stripes, according to the magazine?", "back": "Stripes make it hard for biting flies to see the zebra, so the flies look for another animal to bite." },
-    { "front": "What is special about a snowshoe hare's feet?", "back": "They are big, furry, and webbed, which helps them stay warm, leap away from predators, and not sink into deep snow." },
-    { "front": "In which country do many snowshoe hares live?", "back": "Canada." },
-    { "front": "What helps a walrus climb out of the water onto ice?", "back": "Its two long tusks, which hook into the floating ice." },
-    { "front": "What is the function of a walrus's whiskers?", "back": "They wiggle in the sand on the ocean floor like fingertips to feel for hidden food such as clams and snails." },
-    { "front": "Which planet is described as the hottest in our solar system?", "back": "Venus." },
-    { "front": "What makes Venus so hot?", "back": "Its thick cloud atmosphere holds in heat like a blanket." },
-    { "front": "What weather does the description 'I fall from the sky and make great puddles to splash in' refer to?", "back": "Rain." },
-    { "front": "Which animal has horns that look like giant screws?", "back": "The markhor." },
-    { "front": "What adaptation keeps walruses warm in icy Arctic waters?", "back": "A thick layer of blubber (fat) under their skin." },
-    { "front": "What do walruses use their flippers for?", "back": "To crawl on land and propel themselves through water while swimming." },
-    { "front": "What do snowshoe hares eat during warmer months that requires them to reach upward?", "back": "Leafy greens from tall bushes and shrubs." },
-    { "front": "How do snow petrels hunt for fish in icy waters?", "back": "They hover just above the surface and dive in to catch fish." },
-    { "front": "What is the main difference between a snowshoe hare and a rabbit mentioned in the text?", "back": "Snowshoe hares are not rabbits — they’re a different species with distinct adaptations like seasonal coat color change." },
-    { "front": "What environmental challenge do snowshoe hares’ big feet help them overcome?", "back": "Walking and leaping on deep, soft snow without sinking." },
-    { "front": "Why might biting flies avoid landing on a zebra even when nearby?", "back": "The stripes visually confuse the flies, making it difficult for them to recognize the zebra as a solid landing target." }
+    {
+        "front": "In which country does the zebra featured in the magazine live?",
+        "back": "Zambia.",
+        "front_translation": "杂志里提到的斑马是生活在哪个国家？",
+        "back_translation": "赞比亚。"
+    },
+    {
+        "front": "In which country does the markhor featured in the magazine live?",
+        "back": "Pakistan.",
+        "front_translation": "杂志里提到的螺角山羊生活在哪个国家？",
+        "back_translation": "巴基斯坦。"
+    },
+    {
+        "front": "Where do snow petrels build their nests?",
+        "back": "In Antarctica.",
+        "front_translation": "雪鹱在什么地方筑巢？",
+        "back_translation": "在南极洲。"
+    },
+    {
+        "front": "What do snow petrels eat besides fish?",
+        "back": "Shrimp-like animals called krill.",
+        "front_translation": "除了鱼之外，雪鹱还吃什么？",
+        "back_translation": "被称为磷虾的类似虾的动物。"
+    },
+    {
+        "front": "Why do zebras have stripes, according to the magazine?",
+        "back": "Stripes make it hard for biting flies to see the zebra, so the flies look for another animal to bite.",
+        "front_translation": "根据杂志，斑马为什么有条纹？",
+        "back_translation": "条纹让叮咬的苍蝇难以看清斑马，于是它们会去寻找别的动物叮咬。"
+    },
+    {
+        "front": "What is special about a snowshoe hare's feet?",
+        "back": "They are big, furry, and webbed, which helps them stay warm, leap away from predators, and not sink into deep snow.",
+        "front_translation": "雪鞋兔的脚有什么特别之处？",
+        "back_translation": "它们又大又多毛并且有蹼，这有助于保暖、躲避捕食者并且不会陷入深雪。"
+    },
+    {
+        "front": "In which country do many snowshoe hares live?",
+        "back": "Canada.",
+        "front_translation": "大量雪鞋兔生活在哪个国家？",
+        "back_translation": "加拿大。"
+    },
+    {
+        "front": "What helps a walrus climb out of the water onto ice?",
+        "back": "Its two long tusks, which hook into the floating ice.",
+        "front_translation": "海象靠什么从水里爬上冰面？",
+        "back_translation": "它的两根长长的獠牙，可以钩住浮冰。"
+    },
+    {
+        "front": "What is the function of a walrus's whiskers?",
+        "back": "They wiggle in the sand on the ocean floor like fingertips to feel for hidden food such as clams and snails.",
+        "front_translation": "海象的胡须有什么作用？",
+        "back_translation": "它们在海底沙中摆动，像指尖一样寻找隐藏的食物，比如蛤和蜗牛。"
+    },
+    {
+        "front": "Which planet is described as the hottest in our solar system?",
+        "back": "Venus.",
+        "front_translation": "哪一颗行星被描述为太阳系中最热的行星？",
+        "back_translation": "金星。"
+    },
+    {
+        "front": "What makes Venus so hot?",
+        "back": "Its thick cloud atmosphere holds in heat like a blanket.",
+        "front_translation": "是什么使金星如此炽热？",
+        "back_translation": "它厚厚的云层大气像毯子一样把热量锁住。"
+    },
+    {
+        "front": "What weather does the description 'I fall from the sky and make great puddles to splash in' refer to?",
+        "back": "Rain.",
+        "front_translation": "“我从天而降，会形成很大的水坑供人溅水” 描述的是哪种天气现象？",
+        "back_translation": "雨。"
+    },
+    {
+        "front": "Which animal has horns that look like giant screws?",
+        "back": "The markhor.",
+        "front_translation": "哪种动物的角看起来像巨大的螺丝？",
+        "back_translation": "螺角山羊。"
+    },
+    {
+        "front": "What adaptation keeps walruses warm in icy Arctic waters?",
+        "back": "A thick layer of blubber (fat) under their skin.",
+        "front_translation": "哪种适应性让海象在冰冷的北极海水中保持温暖？",
+        "back_translation": "皮下厚厚的一层脂肪（鲸脂）。"
+    },
+    {
+        "front": "What do walruses use their flippers for?",
+        "back": "To crawl on land and propel themselves through water while swimming.",
+        "front_translation": "海象用鳍肢做什么？",
+        "back_translation": "在陆地上爬行，并在游泳时推动身体前进。"
+    },
+    {
+        "front": "What do snowshoe hares eat during warmer months that requires them to reach upward?",
+        "back": "Leafy greens from tall bushes and shrubs.",
+        "front_translation": "雪鞋兔在较暖的季节会吃需要向上够到的什么食物？",
+        "back_translation": "高大灌木和灌丛上面的绿色叶子。"
+    },
+    {
+        "front": "How do snow petrels hunt for fish in icy waters?",
+        "back": "They hover just above the surface and dive in to catch fish.",
+        "front_translation": "雪鹱在冰冷海面上如何捕捉鱼？",
+        "back_translation": "它们在水面上方盘旋，然后俯冲下去抓鱼。"
+    },
+    {
+        "front": "What is the main difference between a snowshoe hare and a rabbit mentioned in the text?",
+        "back": "Snowshoe hares are not rabbits — they’re a different species with distinct adaptations like seasonal coat color change.",
+        "front_translation": "文本中提到的雪鞋兔与家兔的主要区别是什么？",
+        "back_translation": "雪鞋兔不是家兔——它们是不同的物种，具有季节性毛色变化等独特适应特征。"
+    },
+    {
+        "front": "What environmental challenge do snowshoe hares’ big feet help them overcome?",
+        "back": "Walking and leaping on deep, soft snow without sinking.",
+        "front_translation": "雪鞋兔的大脚帮助它们克服了什么环境挑战？",
+        "back_translation": "在深而松软的雪面上行走和跳跃而不下陷。"
+    },
+    {
+        "front": "Why might biting flies avoid landing on a zebra even when nearby?",
+        "back": "The stripes visually confuse the flies, making it difficult for them to recognize the zebra as a solid landing target.",
+        "front_translation": "为什么叮咬的苍蝇即使在斑马附近也可能不落在它身上？",
+        "back_translation": "条纹在视觉上让苍蝇困惑，使它们难以把斑马识别为一个明确的着陆目标。"
+    }
 ]

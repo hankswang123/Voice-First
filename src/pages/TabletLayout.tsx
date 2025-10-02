@@ -29,9 +29,9 @@ import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {Layers, HelpCircle, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
+import {Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
-import './ConsolePage.scss';
+import './TabletLayout.scss';
 import './AnnotationLayer.css';
 import './TextLayer.css';
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
@@ -55,7 +55,7 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export function ConsolePage() {
+export function TabletLayout() {
   /**
    * Ask user for API Key
    * If we're using the local relay server, we don't need this
@@ -914,11 +914,14 @@ export function ConsolePage() {
 
     if((splitter as HTMLDivElement).style.display === 'flex'){
       //(splitter as HTMLDivElement).style.display = 'none';
-      //rightRef.current.style.display = 'none';    
+      //rightRef.current.style.display = 'none';  
+      
+      chatBot.style.display = 'none';
+      /*
       if(conversationDivRef.current.style.display === 'none') {
         chatBot.style.display = 'none';
         conversationDivRef.current.style.display = 'flex';        
-      }
+      }*/
     }
     else{
       (splitter as HTMLDivElement).style.display = 'flex';
@@ -3472,7 +3475,7 @@ export function ConsolePage() {
    * Render the application
    */
   return (
-    <div data-component="ConsolePage">
+  <div data-component="tabletLayout" className="tablet-layout-root">
       
       {/* Popup Layer for display the video from youtube search triggered by Realtime API  */}      
       <div id="popupOverlay" className="popup-overlay">
@@ -3801,7 +3804,7 @@ export function ConsolePage() {
 
         {/* Splitter Area */}
         {/* Open(Left Arrow<-) or Close((Right Arrow->)) Right Panel */}
-        <div className="button-container">
+        <div className="button-container" style={{display: "none"}}>
           <div id="openRightArrow" className="close-icon-right" onClick={openChatbot} style={{display: (isConnected? "flex": "flex")}}><ArrowLeft style={{ width: '18px', height: '18px' }} /></div>
           <div className="tooltip1"><span>Open Sidebar</span></div>
         </div>
@@ -3965,61 +3968,63 @@ export function ConsolePage() {
           <div className="speed-controls" onMouseDown={(e) => {
                                                                 e.stopPropagation(); // Prevent event from reaching the progress bar
                                                               }}>         
-            <div></div>                   
-            {/* Three Speed control Options: Slower/Normal/Faster */}                                           
-            <TrendingUp style={{ width: '17px', height: '17px' }} />                                                      
-            <div className="speed-control" style={{ 
-              backgroundColor: playbackRate === 0.85 ? '#666' : '#ccc', // Darker if active
-              color: playbackRate === 0.85 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}  onClick={(e) => handleSpeedControlClick(e, 0.85)}>Slower</div>
-            <div className="speed-control"         style={{
-              backgroundColor: playbackRate === 1.0 ? '#666' : '#ccc', // Darker if active
-              color: playbackRate === 1.0 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}    onClick={(e) => handleSpeedControlClick(e, 1.0)}>Normal</div>
-            <div className="speed-control"         style={{
-              backgroundColor: playbackRate === 1.2 ? '#666' : '#ccc', // Darker if active
-              color: playbackRate === 1.2 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div>  
-            {/* Loop button to loop the current audio 
-            <div></div> 
-            <div className="speed-control"         style={{
-              display: 'none',
-              backgroundColor: isLoop === true ? '#666' : '#ccc', // Darker if active
-              color: isLoop === true ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}    onClick={(e) => handleLoopClick(e)}>Loop</div>    */}     
-                                       
-            <div><span className="separator">|</span></div>
+            <div style={{display: 'none'}}>                   
+              {/* Three Speed control Options: Slower/Normal/Faster */}                                           
+              <TrendingUp style={{ width: '17px', height: '17px' }} />                                                      
+              <div className="speed-control" style={{ 
+                backgroundColor: playbackRate === 0.85 ? '#666' : '#ccc', // Darker if active
+                color: playbackRate === 0.85 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}  onClick={(e) => handleSpeedControlClick(e, 0.85)}>Slower</div>
+              <div className="speed-control"         style={{
+                backgroundColor: playbackRate === 1.0 ? '#666' : '#ccc', // Darker if active
+                color: playbackRate === 1.0 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}    onClick={(e) => handleSpeedControlClick(e, 1.0)}>Normal</div>
+              <div className="speed-control"         style={{
+                backgroundColor: playbackRate === 1.2 ? '#666' : '#ccc', // Darker if active
+                color: playbackRate === 1.2 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div> 
+              
+              {/* Loop button to loop the current audio 
+              <div></div> 
+              <div className="speed-control"         style={{
+                display: 'none',
+                backgroundColor: isLoop === true ? '#666' : '#ccc', // Darker if active
+                color: isLoop === true ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}    onClick={(e) => handleLoopClick(e)}>Loop</div>    */}     
+                                        
+              <div><span className="separator">|</span></div>
 
-            {/* Three Volume control Options: Lower/Normal/Louder */} 
-            <Volume style={{ width: '17px', height: '17px' }} />
-            <div className="speed-control" style={{ 
-              backgroundColor: playbackVolume === 0.50 ? '#666' : '#ccc', // Darker if active
-              color: playbackVolume === 0.50 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}  onClick={(e) => handleVolumeControlClick(e, 0.50)}>Lower</div>
-            <div className="speed-control"         style={{
-              backgroundColor: playbackVolume === 0.75 ? '#666' : '#ccc', // Darker if active
-              color: playbackVolume === 0.75 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}    onClick={(e) => handleVolumeControlClick(e, 0.75)}>Normal</div>
-            <div className="speed-control"         style={{
-              backgroundColor: playbackVolume === 1.0 ? '#666' : '#ccc', // Darker if active
-              color: playbackVolume === 1.0 ? '#fff' : '#000', // Adjust text color for contrast
-              borderRadius: '0.3125em',
-            }}    onClick={(e) => handleVolumeControlClick(e, 1.0)}>Louder</div>   
+              {/* Three Volume control Options: Lower/Normal/Louder */} 
+              <Volume style={{ width: '17px', height: '17px' }} />
+              <div className="speed-control" style={{ 
+                backgroundColor: playbackVolume === 0.50 ? '#666' : '#ccc', // Darker if active
+                color: playbackVolume === 0.50 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}  onClick={(e) => handleVolumeControlClick(e, 0.50)}>Lower</div>
+              <div className="speed-control"         style={{
+                backgroundColor: playbackVolume === 0.75 ? '#666' : '#ccc', // Darker if active
+                color: playbackVolume === 0.75 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}    onClick={(e) => handleVolumeControlClick(e, 0.75)}>Normal</div>
+              <div className="speed-control"         style={{
+                backgroundColor: playbackVolume === 1.0 ? '#666' : '#ccc', // Darker if active
+                color: playbackVolume === 1.0 ? '#fff' : '#000', // Adjust text color for contrast
+                borderRadius: '0.3125em',
+              }}    onClick={(e) => handleVolumeControlClick(e, 1.0)}>Louder</div>                 
+            </div>
             <div><span className="separator">|</span></div>
-            <div title='Show Flashcards'><Layers color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleFlashcards} /></div>
+            <div title='Show Flashcards'><Layers color='blue' style={{ width: '20px', height: '20px' }} onClick={toggleFlashcards} /></div>
             {/* Quiz featue is not ready yet
             <div><span className="separator">|</span></div>            
             <div title='Have a Quiz'><HelpCircle color='red' style={{ width: '17px', height: '17px' }} /></div>            
             */}
             <div><span className="separator" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>|</span></div>
             <div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
-              <div title={keyword === '' ? 'Select a Keyword to Dive in' : '' }><BookOpen color='blue' style={{ width: '17px', height: '17px' }} /></div>
+              <div title={keyword === '' ? 'Select a Keyword to Dive in' : '' }><BookOpen color='blue' style={{ width: '20px', height: '20px' }} /></div>
               <div className="tooltip" style={{backgroundColor: 'rgb(255, 255, 255, 1)', width: 'auto', height: 'auto'}}>
                 <ul style={{listStyle: 'none', marginLeft:'10px', textAlign: 'left', padding: '0px'}}> 
                   {Object.entries(Keywords.current as Record<string, [number, number, number]>).map(([key, [value1, value2, value3]], index) => value3 !== 0 && (

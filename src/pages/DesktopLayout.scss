@@ -1,0 +1,1179 @@
+[data-component='deskLayout'] {
+  background-color: #fff;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  //margin: 0px 8px;
+  margin-left: 0px;
+  margin-right: 0px;
+  & > div {
+    flex-shrink: 0;
+  }
+
+  .spacer {
+    flex-grow: 1;
+  }
+
+  .caption-display {
+    display: block;
+    position: absolute;
+    bottom: 50px;
+    width: 100%;
+    min-height: 95px;
+    max-height: 300px;
+    min-height: 105px;
+    left: 29px;
+    overflow-y: auto; 
+    text-align: left;
+    font-size: 4em;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    color: white;
+    padding: 10px;
+    margin-left: -1.3px;
+    border-radius: 5px; 
+    white-space: normal; /* Allow natural wrapping */
+    overflow-wrap: break-word; /* Enable word wrapping only for long, unbreakable words */
+    word-break: normal; /* Prevent unnecessary word breaking */   
+    word-spacing: -5px; /* Decrease space between words */
+    letter-spacing: 0px; /* Keep letters evenly spaced */
+  }  
+
+  .caption-display span {
+    display: inline-block;
+    white-space: normal; /* Prevent breaking within spans */
+    margin: 0 1px; /* Optional: Add some spacing between words */
+    word-spacing: -5px; /* Decrease space between words */
+  }  
+
+  .hidden-button {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap; /* added line */
+    border: 0;
+    padding: 0;
+    margin: -1px;
+  }  
+
+  .audio-duration {
+    position: absolute;
+    top: -2em; /* Adjust as needed */
+    right: 0;
+    background-color: white;
+    color:  rgba(0, 0, 0, 0.7);
+    padding: 0.3125em;
+    border-radius: 0.3125em;
+    font-size: 0.8em;
+  }  
+
+  .selection-box {
+    position: absolute;
+    background-color: rgba(0, 0, 255, 0.2);
+    border: 2px dashed blue;
+    pointer-events: none;
+  }  
+
+  .input-box {
+    width: 258px;
+    height: 20px;
+    border: 1px solid #ccc; /* Add a border around the input box */
+    border-top: 1px solid #ccc; /* Make the upper border higher */
+    padding-top: 5px; /* Add padding to the top to increase the height */
+    box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
+    z-index: 9900;
+  }
+  
+  .input-container {
+    display: flex;
+    flex-direction: column;
+    margin: 1em 0;
+    position: relative; /* Ensure the input box is positioned relative to this container */
+    top: -3em; /* Adjust this value to move the input box higher */
+  }  
+  
+  #contextMenu {
+    background: #4c4c7a;
+    color: white;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+  }
+  
+  #contextMenu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  #contextMenu ul li {
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+  #contextMenu ul li:hover {
+    background: #6262a1;
+  }  
+
+  #floatingKeywords li:hover {
+    background: #6262a1;
+  }    
+
+  
+  //.hover-effect {
+  //  transition: background-color 0.3s ease; /* Optional: Add transition for smooth effect */
+  //}
+  
+  //.hover-effect:hover {
+    //background-color: #6262a1; /* Change to your desired hover background color */
+    //background-color: red; /* Change to your desired hover background color */
+  //}  
+
+  .hover-effect {
+    background-color: #fff; /* Default background color */
+    color: #000; /* Default text color */
+    //transition: background-color 0.3s ease; /* Optional: Smooth transition */
+  }
+  
+  .hover-effect:hover {
+    //background-color: red; /* Hover background color */
+    //background-color: #6262a1;
+    background-color: #66666698;
+    color: #fff; /* Optional: Hover text color */
+  }
+  
+  .hover-effect.active {
+    background-color: #666; /* Active background color */
+    color: #fff; /* Active text color */
+  }  
+
+  .no-select {
+    user-select: none; /* Prevent text selection */
+  }  
+
+  .top-hover-area {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 20px; /* Adjust the height as needed */
+    z-index: 9998; /* Ensure it is above other elements */
+    justify-content: center; /* Horizontally center */
+  }
+
+  .arrowdown {
+      display: flex;
+      //position: relative;
+      //display: ;
+      top: 10px;
+      left: 50px;
+      align-items: center;
+      //left: auto;
+      //right: auto;
+      width: 580px;
+      height: 2px;
+      margin-top: 1px;
+      background: #aaa;
+      border-radius: 16px;
+      z-index: 1000;
+      padding: 2px;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;   
+  }
+
+  .top-floating-line {
+    position: absolute;
+    top: 1px;               /* 固定在父元素的顶部 */
+    left: 50%;            /* 水平偏移50% */
+    transform: translateX(-50%); /* 调整自身位置以实现水平居中 */   
+
+    width: 580px;
+    height: 2px;
+    margin-top: 1px;
+    background: #aaa;
+    border-radius: 16px;
+    z-index: 1000;
+    padding: 2px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;    
+}  
+
+  .magzine-title {
+    font: 700 27px / 1.067 serif;
+    font-family: Poppins, Roboto, sans-serif;
+    letter-spacing: -.05em;
+    color: blueviolet;
+    //color: var(--g1-itxt-color);
+    text-transform: none;     
+  }
+
+  .top-hover-area:not(:hover) .button-row-top {
+      opacity: 0;
+      pointer-events: none; /* Prevent interaction when hidden */
+      transition: opacity 1.0s ease-in-out;
+  }
+
+  .top-hover-area .button-row-top {
+      display: flex;
+      flex-grow: 1;
+      margin-left: 0px; /* Adjust this value as needed */
+      gap: 0.1em; /* Space between buttons */
+      align-items: center; /* Align items vertically in the center */
+      position: fixed;
+      top: 0; /* Adjust this value to position the button row at the top */
+      width: 100%; /* Make it span the full width of the viewport */
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      background-color: white; /* Optional: Set a background color to make it stand out */
+      z-index: 1000; /* Ensure it appears above other content */
+      padding: 0.4em; /* Optional: Add some padding */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Adjust the values as needed */
+      border-radius: 16px;
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+  }
+
+  .content-api-key {
+    display: flex;
+    justify-content: flex-end;      
+    margin-left: auto;
+    margin-right: 6px;
+  }    
+
+  .right-buttons {
+    display: flex;
+    justify-content: flex-end;      
+    margin-left: auto;
+    margin-right: 0px;
+    box-sizing: border-box;
+  }   
+
+  .button-row {
+    display: flex;  
+    flex-grow: 1;
+    //gap: 16px; /* Space between buttons */
+    gap: 0.1em; /* Space between buttons */
+    align-items: center; /* Align items vertically in the center */    
+    position: fixed;
+    //position: absolute;
+    //bottom: 0; /* Adjust this value to position the button row at the bottom */
+    bottom: 0;
+    width: 100%; /* Make it span the full width of the viewport */
+    max-width: 100%;
+    box-sizing: border-box;
+    //overflow: hidden;     
+    background-color: white; /* Optional: Set a background color to make it stand out */
+    z-index: 1000; /* Ensure it appears above other content */
+    //padding: 3px; /* Optional: Add some padding */
+    padding: 0.5em; /* Optional: Add some padding */
+    //box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+    box-shadow: 0 -0.125em 0.3125em rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+    border-radius: 16px;
+    margin: 1px;
+    opacity: 1;
+    //opacity: 0.95;
+  } 
+
+  .button-row .button {
+    font-size: 1em; /* Use em for font size */
+    padding: 0.5em 1em; /* Use em for padding */    
+    margin-right: 0px; /* Adjust this value as needed */
+  }  
+
+  @media (max-width: 600px) {
+    .button-row {
+      flex-direction: column; /* Stack buttons vertically on small screens */
+      gap: 0.5em; /* Adjust gap for small screens */
+    }
+  
+    .button-row .button {
+      font-size: 0.9em; /* Adjust font size for small screens */
+      padding: 0.4em 0.8em; /* Adjust padding for small screens */
+    }
+  }  
+
+  .content-caption {
+    display: flex;
+    justify-content: flex-start;      
+    margin-left: 0 !important;
+    padding-left: 0 !important; /* Ensure no padding on the left */
+  }     
+
+  .floating-button {
+    position: fixed;
+    bottom: 50px; /* Adjust as needed */
+    right: 0px; /* Adjust as needed */
+    //background-color: #007bff; /* Button background color */
+    color: white; /* Button text color */
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9997; /* Ensure it is above other elements */
+  }  
+
+  .floating-open-button {
+    position: fixed;
+    top: 50px;
+    left: 10px;
+    //background-color: #007bff; /* Button background color */
+    //color: white; /* Button text color */
+    border: none;
+    //border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9995; /* Ensure it is above other elements */
+  }   
+
+  .floating-keywords {
+    position: fixed;
+    top: 60px;
+    left: 0px;
+    font-size: larger;
+    list-style: none;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    list-style-type: none;
+    max-height: 600px;
+    overflow-y: auto;
+    z-index: 9990; /* Ensure it is above other elements */
+  }
+  .floating-keywords li {
+      margin-bottom: 5px;
+      cursor: pointer;
+      //transition: background-color 0.1s;
+  }
+  .floating-keywords li:hover {
+      background-color: #e0e0e0;
+  }  
+
+  .floating-captionsize {
+    position: fixed;
+    bottom: 37px;
+    left: 3px;
+    font-size: small;
+    //background-color: #f9f9f9;
+    background-color: rgba(0, 0, 0, 0.311);
+    border: 1px solid #ddd;
+    border-radius: 5px; 
+    padding: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    list-style-type: none;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 9998; /* Ensure it is above other elements */
+  }
+  .floating-captionsize li {
+      margin-bottom: 1px;
+      cursor: pointer;
+      //transition: background-color 0.1s;
+  }
+  .floating-captionsize li:hover {
+      background-color: #e0e0e0;
+  }    
+
+  .floating-right-arrow {
+    position: fixed;
+    bottom: 400px; /* Adjust as needed */
+    right: 0px; /* Adjust as needed */
+    //background-color: #007bff; /* Button background color */
+    color: white; /* Button text color */
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999; /* Ensure it is above other elements */
+  }    
+
+  .separator {
+    //margin: 0 10px; /* Add some horizontal margin to separators */
+    color: #ccc; /* Color of the separator */
+    font-weight: bold; /* Make the separator bolder */
+  }  
+
+  .splitter {
+    width: 5px;
+    background-color: lightgray;
+    cursor: col-resize;
+  }  
+
+  .splitter:hover {
+    //background-color: gray;
+    background-color: #696969;
+    //background-color: blue;
+  }
+
+  .speed-controls {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5em; /* Adjust as needed */
+    //width: 40%;
+    width: 100%;
+    margin-top: 0.2em; /* Adjust as needed */
+  }
+  
+  .speed-control {
+    font-size: 0.8em; /* Adjust as needed */
+    padding: 0.2em 0.5em; /* Adjust as needed */
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    //text-align: left;
+    width: auto;
+    height: 13px;
+
+    transition: font-size 0.3s ease, transform 0.3s ease;
+    transform-origin: bottom; /* Ensure scaling happens from the bottom */    
+  }
+
+  .speed-control:hover {
+    //font-size: 1.2em;
+    font-size: 1em;
+    transform: scaleY(1.2); /* Scale the height upwards */
+  }
+
+  .captionFont {
+    font-size: 0.8em; /* Adjust as needed */
+    padding: 0.2em 0.5em; /* Adjust as needed */
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .keyword {
+    font-size: 0.8em; /* Adjust as needed */
+    padding: 0.2em 0.5em; /* Adjust as needed */
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    cursor: pointer;
+    bottom: 0px;
+    z-index: 9900; 
+    text-align: center;
+    transition: font-size 0.3s ease, transform 0.3s ease;
+    transform-origin: bottom; /* Ensure scaling happens from the bottom */
+  }  
+
+  /* Make it more larger regarding height when the search box is focused */
+  .keyword:hover {
+    font-size: 1.2em;
+    transform: scaleY(1.2); /* Scale the height upwards */
+  }    
+
+  /* Base style for the search box */
+  .dynamic-searchBox {
+    width: 258px;
+    height: 11px; /* Initial height */
+    border: none; /* Remove the border */
+    z-index: 9900; /* Ensure the search box appears above other content */
+    color: blue;
+    bottom: 0px;
+    border-radius: 5px;
+  }
+
+  /* Make it more larger regarding height when the search box is focused */
+  .dynamic-searchBox:focus {
+    height: 24px; /* Height when focused */
+  }  
+
+  .content-top {
+    display: flex;
+    //display: none;
+    align-items: center;
+    padding: 8px 16px;
+    min-height: 40px;
+    .content-title {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold; 
+      font-size:1.6em;
+      color: #101010;
+      img {
+        width: 120px;
+        height: 30px;
+      }
+    }
+  }
+
+  .content-main {
+    flex-grow: 1;
+    flex-shrink: 1 !important;
+    margin: 0px 16px;
+    margin-left: 0px;
+    margin-right: 0px;
+    padding-left: 0px;
+    display: flex;
+    //display: none; //hide the orginal content
+    overflow: hidden;
+    margin-bottom: 24px;
+    .content-block {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+      width: 100%;
+      .content-block-title {
+        flex-shrink: 0;
+        padding-top: 16px;
+        padding-bottom: 4px;
+        position: relative;
+        font-size: small;
+      }
+      .content-block-body {
+        color: #6e6e7f;
+        position: relative;
+        flex-grow: 1;
+        padding: 8px 0px;
+        padding-top: 4px;
+        line-height: 1.2em;
+        overflow: auto;
+        &.full {
+          padding: 0px;
+        }
+      }
+    }
+
+    .content-right {
+      display: flex;
+      //overflow-y: auto;
+      width: 400px;
+      //width: 100%;
+      flex-shrink: 0;
+      flex-direction: column;
+      //margin-top: 50px;
+      //margin-left: 24px;
+      margin-left: 0px;
+      margin-right: 0px;
+      margin-bottom: 35px;
+      bottom: 0px;
+      flex-grow: 1;
+      gap: 24px;
+      & > div {
+        border-radius: 1px;
+        flex-grow: 1;
+        flex-shrink: 0;
+        overflow: hidden;
+        position: relative;
+        .content-block-title {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 2em;
+          //margin-top: 50px;
+          //top: 16px;
+          //left: 16px;
+          top: -20px;
+          left: 0;
+          padding: 4px 16px;
+          background-color: #fff;
+          border-radius: 1000px;
+          min-height: 32px;
+          z-index: 9999;
+          text-align: center;
+          white-space: pre;
+          &.bottom {
+            top: auto;
+            bottom: 16px;
+            right: 16px;
+          }
+        }
+      }
+      & > div.kv {
+        visibility: hidden;
+        height: 250px;
+        max-height: 250px;
+        white-space: pre;
+        background-color: #ececf1;
+        .content-block-body {
+          padding: 16px;
+          margin-top: 56px;
+        }
+      }
+    }
+    .content-logs {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      & > div {
+        flex-grow: 1;
+      }
+      & > .content-actions {
+        flex-grow: 0;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+      & > div.events {
+        overflow: hidden;
+      }
+      .events {
+        border-top: 1px solid #e7e7e7;
+      }
+      .conversation {
+        display: flex;
+        //display: none;
+        flex-shrink: 0;
+        width: 100%;
+        overflow: hidden;
+        height: 400px;
+        min-height: 0;
+        //max-height: 400px;
+        max-height: 100%;
+        border-top: 1px solid #e7e7e7;
+      }
+      .conversation-display {
+        display: flex;
+        flex-shrink: 0;
+        width: 100%;
+        overflow: hidden;
+        height: 400px;
+        min-height: 0;
+        max-height: 400px;
+        border-top: 1px solid #e7e7e7;
+      }      
+    }
+  }
+
+  /* Hide the popup by default */
+  .popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Popup content styling */
+  .popup-content-conversation {
+    position: relative;
+    background-color: #fff;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    //new added
+    width: 60%;
+    height: 80%;    
+  }  
+
+  /* Popup content styling */
+  .popup-content-chat {
+    position: relative;
+    background-color: #fff;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    //new added
+    width: 80%;
+    height: 90%;    
+  }
+
+    /* Popup content styling */
+  .popup-content-flashcards {
+    position: relative;
+    background-color: #d60d0d;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    //new added
+    width: 100%;
+    height: 100%;  
+    opacity: 1;  
+  }
+
+  /* Popup content styling */
+  .popup-content-video {
+    position: relative;
+    background-color: #fff;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);  
+  }  
+
+  .close-button-keywords {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #aaa;
+    color: #fff;
+    display: flex;
+    border-radius: 16px;
+    padding: 2px;
+    cursor: pointer;
+    &:hover {
+      background: #696969;
+    }
+    svg {
+      stroke-width: 3;
+      width: 12px;
+      height: 12px;
+    }
+  }    
+
+  /* Close button styling */
+  .close-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #aaa;
+    color: #fff;
+    display: flex;
+    border-radius: 16px;
+    padding: 2px;
+    cursor: pointer;
+    &:hover {
+      background: #696969;
+    }
+    svg {
+      stroke-width: 3;
+      width: 12px;
+      height: 12px;
+    }
+  }  
+
+.close-icon-right {
+  position: absolute;
+  z-index: 9990;
+  margin-top: 50px;
+  top: 40%;;
+  right: 10px;
+  //background: #aaa;
+  background: lightgray;
+  color: #fff;
+  display: flex;
+  border-radius: 16px;
+  padding: 2px;
+  cursor: pointer;
+  &:hover {
+    background: #696969;
+  }
+  svg {
+    stroke-width: 3;
+    width: 12px;
+    height: 12px;
+  }
+}    
+
+.close-icon-left {
+  position: absolute;
+  z-index: 1;
+  margin-top: 50px;
+  top: 40%;;
+  right: 400px;
+  background: lightgray;
+  color: #fff;
+  display: flex;
+  border-radius: 16px;
+  padding: 2px;
+  cursor: pointer;
+  &:hover {
+    background: #696969;
+  }
+  svg {
+    stroke-width: 3;
+    width: 12px;
+    height: 12px;
+  }
+}    
+
+.button-container {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+
+.tooltip1 {
+  visibility: hidden;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 1;
+  left: -160px; /* Adjust this value based on tooltip width */
+  bottom: 50%;
+  transform: translateY(50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip1::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%; /* Position the arrow at the right edge of the tooltip */
+  margin-top: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent transparent black;
+}
+
+.button-container:hover .tooltip1 {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+  .tooltip {
+    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #333; /* Adds a subtle border */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Adds a shadow for depth */
+    position: absolute;
+    bottom: 100%; /* Position above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    width: 250px;
+    max-height: 500px;
+    z-index: 9999;
+  }  
+
+  .tooltip-title {
+    font-size: 1.2em; /* Make title slightly larger */
+    font-weight: bold; /* Emphasize the title */
+  }  
+
+  .tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* Position at the bottom of the tooltip */
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px; /* Size of the arrow */
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Arrow color */
+  }  
+
+  .tooltip-container {
+    position: relative;
+    display: inline-block;
+    z-index: 9999;
+  }  
+
+  .tooltip-container:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }  
+
+  .setting {
+    visibility: hidden;
+    background-color: white;
+    color: black;
+    text-align: center;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #333; /* Adds a subtle border */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Adds a shadow for depth */
+    position: absolute;    
+    bottom: 100%; /* Position above the button */
+    right: 50%;
+    transform: translateX(5%);
+    margin-bottom: 10px;
+    //opacity: 1;
+    opacity: 0;
+    //transition: opacity 0.3s;
+    transition: opacity 2s, visibility 0s 2s; /* Transition opacity over 3s, delay visibility change */
+    width: 300px;
+    height: 300px;
+    z-index: 9999;
+  }  
+
+  .setting-title {
+    font-size: 1.2em; /* Make title slightly larger */
+    font-weight: bold; /* Emphasize the title */
+  }  
+
+  .setting::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* Position at the bottom of the tooltip */
+    right: 1px;
+    transform: translateX(-50%);
+    border-width: 6px; /* Size of the arrow */
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Arrow color */
+  }  
+
+  .setting-container {
+    position: relative;
+    display: inline-block;
+    z-index: 9999;
+  }  
+
+  .setting-container:hover .setting {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.3s; /* Ensure quick fade-in */
+  }    
+
+  .setting-container .setting {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 1s, visibility 0s 1s; /* Transition opacity over 0.3s, delay visibility change */
+  }  
+
+  .captionsize {
+    visibility: hidden;
+    //background-color: #333;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #333; /* Adds a subtle border */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Adds a shadow for depth */
+    position: absolute;    
+    bottom: 100%; /* Position above the button */
+    //right: 50%;
+    left: 50%;
+    transform: translateX(-5%);
+    margin-bottom: 10px;
+    opacity: 1;
+    transition: opacity 0.3s;
+    width: 250px;
+    //height: 300px;
+    z-index: 9999;
+  }  
+
+  .captionsize::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* Position at the bottom of the tooltip */
+    //right: 1px;
+    left: 13px;
+    transform: translateX(-50%);
+    border-width: 6px; /* Size of the arrow */
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Arrow color */
+  }  
+
+  .captionsize-container {
+    position: relative;
+    display: inline-block;
+    z-index: 9999;
+  }  
+
+  .captionsize-container:hover .captionsize {
+    visibility: visible;
+    opacity: 1;
+  }      
+
+/*
+  .tooltip-container:hover .close-icon-right {
+    background: #696969;
+  }  */ 
+
+  .video {
+        display: none;
+        flex-shrink: 0;
+        width: 100%;
+        overflow: hidden;
+        height: 400px;
+        min-height: 0;
+        max-height: 400px;
+        border-top: 1px solid #e7e7e7;
+  }
+  .video-display {
+    display: flex;
+    flex-shrink: 0;
+    width: 100%;
+    overflow: hidden;
+    height: 400px;
+    min-height: 0;
+    max-height: 400px;
+    border-top: 1px solid #e7e7e7;
+}
+  .divider {
+    width: 1px; /* Width of the vertical line */
+    background-color: #e7e7e7; /* Color of the vertical line */
+    height: 100%; /* Full height of the container */
+    margin-left: 10px;
+    margin-right: -15px;
+  }
+
+  .highlightgreen {
+    font-weight: bold; 
+    color: lightgreen; /* Set the text color to red */
+  }  
+
+  .highlightred {
+    font-weight: bold; 
+    color: red; /* Set the text color to red */
+  }
+
+  .network-title {
+    flex-shrink: 0;
+    padding-top: 16px;
+    padding-bottom: 4px;
+    position: relative;
+    font-size: x-small;
+  }
+
+  .conversation-item {
+    position: relative;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    &:not(:hover) .close {
+      display: none;
+    }
+    .close {
+      position: absolute;
+      top: 0px;
+      right: -20px;
+      background: #aaa;
+      color: #fff;
+      display: flex;
+      border-radius: 16px;
+      padding: 2px;
+      cursor: pointer;
+      &:hover {
+        background: #696969;
+      }
+      svg {
+        stroke-width: 3;
+        width: 12px;
+        height: 12px;
+      }
+    }
+    .speaker {
+      position: relative;
+      text-align: left;
+      gap: 16px;
+      width: 80px;
+      flex-shrink: 0;
+      margin-right: 16px;
+      &.user {
+        color: #0099ff;
+      }
+      &.assistant {
+        color: #009900;
+      }
+    }
+    .speaker-content {
+      color: #18181b;
+      overflow: hidden;
+      word-wrap: break-word;
+    }
+  }
+
+  .event {
+    border-radius: 3px;
+    white-space: pre;
+    display: flex;
+    padding: 0px;
+    gap: 16px;
+    .event-timestamp {
+      text-align: left;
+      gap: 8px;
+      padding: 4px 0px;
+      width: 80px;
+      flex-shrink: 0;
+      margin-right: 16px;
+    }
+    .event-details {
+      display: flex;
+      flex-direction: column;
+      color: #18181b;
+      gap: 8px;
+      .event-summary {
+        padding: 4px 8px;
+        margin: 0px -8px;
+        &:hover {
+          border-radius: 8px;
+          background-color: #f0f0f0;
+        }
+        cursor: pointer;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        .event-source {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          &.client {
+            color: #0099ff;
+          }
+          &.server {
+            color: #009900;
+          }
+          &.error {
+            color: #990000;
+          }
+          svg {
+            stroke-width: 3;
+            width: 12px;
+            height: 12px;
+          }
+        }
+      }
+    }
+  }
+
+  .visualization {
+    position: absolute;
+    display: flex;
+    bottom: 4px;
+    right: 8px;
+    padding: 4px;
+    border-radius: 16px;
+    z-index: 10;
+    gap: 2px;
+    .visualization-entry {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 40px;
+      width: 100px;
+      gap: 4px;
+      &.client {
+        color: #0099ff;
+      }
+      &.server {
+        color: #009900;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        color: currentColor;
+      }
+    }
+  }
+}
