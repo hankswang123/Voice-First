@@ -37,7 +37,7 @@ function App() {
     <div data-component="App">
       {/*<ConsolePage />*/}
       {deviceType.isDesktop && <DesktopLayout />}
-      {deviceType.isTablet && <TabletLayout />}
+      {(deviceType.isTablet || deviceType.isMobile) && <TabletLayout />}
     </div>
   );
 }
