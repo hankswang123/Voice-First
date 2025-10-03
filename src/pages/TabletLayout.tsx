@@ -3480,7 +3480,7 @@ export function TabletLayout() {
       {/* Popup Layer for display the video from youtube search triggered by Realtime API  */}      
       <div id="popupOverlay" className="popup-overlay">
         <div id="popupContent" className="popup-content-chat">
-          <span id="closePopup" className="close-button"><X /></span>
+          <span id="closePopup" className="close-button"><X style={{ width: '20px', height: '20px' }} /></span>
           {/* Show flashcards here */}
           <div id="flashcardsContainer"
                style={{
@@ -3921,6 +3921,49 @@ export function TabletLayout() {
           ></div> )
         } 
 
+        <Button
+                label={'Flashcards'}
+                iconPosition={'start'}
+                icon={Layers}
+                buttonStyle={'regular'}
+                onClick={toggleFlashcards}
+                className='button'
+        />
+       
+
+        <div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
+          <Button
+                  label={'Keywords'}
+                  iconPosition={'start'}
+                  icon={BookOpen}
+                  buttonStyle={'regular'}
+                  className='button'
+          />
+          <div className="tooltip" style={{backgroundColor: 'rgb(255, 255, 255, 1)', width: 'auto', height: 'auto'}}>
+            <ul style={{listStyle: 'none', marginLeft:'10px', textAlign: 'left', padding: '0px'}}> 
+              {Object.entries(Keywords.current as Record<string, [number, number, number]>).map(([key, [value1, value2, value3]], index) => value3 !== 0 && (
+                <li
+                  key={index} // Use index as the key for React
+                  className={`hover-effect ${keyword === key ? 'active' : ''}`}
+                  style={{
+                    borderRadius: '0.3125em',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'left',
+                    fontSize: '1.5em',
+                    cursor: 'pointer',
+                    marginRight: '20px',
+                    marginLeft: '10px',
+                  }}
+                  onClick={(e) => loopKeywordPlay(e, key, value1, value2, value3)} // Loop play the keyword segment
+                >
+                  {index+1}.{key}
+                </li>
+              ))}
+            </ul>
+          </div> 
+        </div>
+
+
         {/* Show/Hide Captions Button */}
         <div className="content-caption" style={{userSelect: 'none'}}>
           <Button
@@ -3955,7 +3998,7 @@ export function TabletLayout() {
         {/* Progress bar area */}
         <div 
           ref={progressBarRef}
-          style={{position: 'relative', width: '55%', backgroundColor: '#ccc', height: '0.625em', borderRadius: '0.3125em', marginTop: '0.2em', marginLeft: '-1px', userSelect: 'none' }}
+          style={{position: 'relative', width: '45%', backgroundColor: '#ccc', height: '0.625em', borderRadius: '0.3125em', marginTop: '0.2em', marginLeft: '-1px', userSelect: 'none' }}
           onMouseDown={isAudioExisting ? handleMouseDown : undefined}>
           <div style={{ 
                         width: `${progress}%`,
@@ -4016,8 +4059,8 @@ export function TabletLayout() {
                 borderRadius: '0.3125em',
               }}    onClick={(e) => handleVolumeControlClick(e, 1.0)}>Louder</div>                 
             </div>
-            <div><span className="separator">|</span></div>
-            <div title='Show Flashcards'><Layers color='blue' style={{ width: '20px', height: '20px' }} onClick={toggleFlashcards} /></div>
+            <div><span className="separator" style={{display: 'none'}}>|</span></div>
+            <div title='Show Flashcards' style={{display: 'none'}}><Layers color='blue' style={{ width: '20px', height: '20px' }} onClick={toggleFlashcards} /></div>
             {/* Quiz featue is not ready yet
             <div><span className="separator">|</span></div>            
             <div title='Have a Quiz'><HelpCircle color='red' style={{ width: '17px', height: '17px' }} /></div>            
