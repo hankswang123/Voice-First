@@ -3804,7 +3804,7 @@ export function TabletLayout() {
 
         {/* Splitter Area */}
         {/* Open(Left Arrow<-) or Close((Right Arrow->)) Right Panel */}
-        <div className="button-container" style={{display: "none"}}>
+        <div className="button-container">
           <div id="openRightArrow" className="close-icon-right" onClick={openChatbot} style={{display: (isConnected? "flex": "flex")}}><ArrowLeft style={{ width: '18px', height: '18px' }} /></div>
           <div className="tooltip1"><span>Open Sidebar</span></div>
         </div>
@@ -3967,7 +3967,7 @@ export function TabletLayout() {
         {/* Show/Hide Captions Button */}
         <div className="content-caption" style={{userSelect: 'none'}}>
           <Button
-                  label={isCaptionVisible ? 'Hide Caption' : 'Show Caption'}
+                  label={isCaptionVisible ? 'Caption' : 'Caption'}
                   buttonStyle={'regular'}
                   iconPosition={'start'}
                   icon={AlignCenter}                  
@@ -4065,8 +4065,8 @@ export function TabletLayout() {
             <div><span className="separator">|</span></div>            
             <div title='Have a Quiz'><HelpCircle color='red' style={{ width: '17px', height: '17px' }} /></div>            
             */}
-            <div><span className="separator" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>|</span></div>
-            <div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
+            {/*<div><span className="separator" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>|</span></div>*/}
+            {/*<div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
               <div title={keyword === '' ? 'Select a Keyword to Dive in' : '' }><BookOpen color='blue' style={{ width: '20px', height: '20px' }} /></div>
               <div className="tooltip" style={{backgroundColor: 'rgb(255, 255, 255, 1)', width: 'auto', height: 'auto'}}>
                 <ul style={{listStyle: 'none', marginLeft:'10px', textAlign: 'left', padding: '0px'}}> 
@@ -4090,7 +4090,7 @@ export function TabletLayout() {
                   ))}
                 </ul>
               </div> 
-            </div>
+            </div>*/}
             <div className="speed-control"         style={{
               display: keyword === '' ? 'none' : 'flex',
               backgroundColor: keyword !== '' ? '#666' : '#ccc', // Darker if active

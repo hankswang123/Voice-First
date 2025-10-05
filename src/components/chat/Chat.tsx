@@ -12,6 +12,8 @@ import { RealtimeClient } from '@hankswang123/realtime-api-beta';
 import { Button } from '../button/Button';
 import { Mic, MicOff, Send } from 'react-feather';
 
+import { detectDevice } from '../../utils/detectDevice';
+
 
 let apiKey = localStorage.getItem('tmp::voice_api_key');
 if (apiKey === '') {
@@ -257,6 +259,8 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chatModel, setChatModel] = useState("GPT-Realtime");
   const [isChecked, setIsChecked] = useState(true);
+
+  const [deviceType, setDeviceType] = useState<ReturnType<typeof detectDevice>>(detectDevice());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -680,6 +684,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           onChange={handleInputOnChange}
           placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
+          disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  
         <Button
           title={realtimeClient.isConnected() ? "" : "Connect to talk"}

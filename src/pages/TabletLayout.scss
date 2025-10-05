@@ -379,7 +379,7 @@
     list-style-type: none;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 9998; /* Ensure it is above other elements */
+    z-index: 2000; /* Ensure it is above other elements */
   }
   .floating-captionsize li {
       margin-bottom: 1px;
