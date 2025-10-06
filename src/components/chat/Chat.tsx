@@ -52,7 +52,7 @@ const UserMessage = ({ text }: { text: string }) => {
 
   const preprocessText = (text: string) => {
 
-    if (text.includes('Read Aloud:') || text.includes('Translate:') || text.includes('wordcard:') ) {
+    if (text.includes('Read Aloud:') || text.includes('Translate:') || text.includes('wordcard:') || text.includes('SyntaxAnalyze:')) {
       //return 'Describe Selection';
       return '';
     }  
