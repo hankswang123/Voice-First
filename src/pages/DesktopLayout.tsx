@@ -35,7 +35,7 @@ import './DesktopLayout.scss';
 import './AnnotationLayer.css';
 import './TextLayer.css';
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
-import Chat, {openai} from '../components/chat/Chat';
+import Chat, {openai} from '../components/chat_desktop/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
 import { Button } from '../components/button/Button';
