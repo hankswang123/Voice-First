@@ -684,7 +684,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           onChange={handleInputOnChange}
           placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
-          disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
+          //disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  
         <Button
           title={realtimeClient.isConnected() ? "" : "Connect to talk"}

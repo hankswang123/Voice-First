@@ -2420,11 +2420,11 @@ export function TabletLayout() {
                     The output should follow the format strictly(if there are no corresponding part of speech, just leave it blank and donot output anything, e.g. there is no Noun Clause in the sentence, donot output this part. if there is not any clauses at all, just leave the clauses part blank and make sure the title: <div><b>从句类型分析</b></div> is also not displayed):
                     <div><b>句子成分分析</b></div>
                     - 主语 (Subject): <span className="highlightred"><b>{word or phrase}</b></span>
-                    - 谓语 (Predicate): <b>{word or phrase}</b>
-                    - 宾语 (Object): <b>{word or phrase}</b>
-                    - 定语 (Attributive): <b>{word or phrase}</b>
-                    - 状语 (Adverbial): <b>{word or phrase}</b>
-                    - 补语 (Complement): <b>{word or phrase}</b>
+                    - 谓语 (Predicate): <span className="highlightorange"><b>{word or phrase}</b></span>
+                    - 宾语 (Object): <span className="highlightgreen"><b>{word or phrase}</b></span>
+                    - 定语 (Attributive): <span className="highlightblue"><b>{word or phrase}</b></span>
+                    - 状语 (Adverbial): <span className="highlightpurple"><b>{word or phrase}</b></span>
+                    - 补语 (Complement): <span className="highlightpink"><b>{word or phrase}</b></span>
                     <div><b>动词时态分析</b></div>
                     - 动词 (Verb): <b>{word}</b> 
                     -- 时态: <b>{tense}</b> 

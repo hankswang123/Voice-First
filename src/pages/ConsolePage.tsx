@@ -914,11 +914,14 @@ export function ConsolePage() {
 
     if((splitter as HTMLDivElement).style.display === 'flex'){
       //(splitter as HTMLDivElement).style.display = 'none';
-      //rightRef.current.style.display = 'none';    
+      //rightRef.current.style.display = 'none';  
+      
+      chatBot.style.display = 'none';
+      /*
       if(conversationDivRef.current.style.display === 'none') {
         chatBot.style.display = 'none';
         conversationDivRef.current.style.display = 'flex';        
-      }
+      }*/
     }
     else{
       (splitter as HTMLDivElement).style.display = 'flex';
