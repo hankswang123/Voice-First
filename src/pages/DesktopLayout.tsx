@@ -1787,7 +1787,9 @@ export function DesktopLayout() {
 */
 
     //Generate image by recraft.ai for the given word at the first time
-  const response: Response = await fetch(`/api/recraft/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
+    //const response: Response = await fetch(`/api/recraft/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
+    const response: Response = await fetch(`/api/zhipu/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
+    console.log('after image request');
     /*
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

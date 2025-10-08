@@ -18,7 +18,8 @@
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.1.0",
     "rehype-raw": "^7.0.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zhipuai": "^2.0.0"
   },
   "devDependencies": {
     "@types/html2canvas": "^0.5.35",
@@ -43,7 +44,7 @@
     "predeploy": "npm run build",
     "dev:all": "concurrently \"npm run relay\" \"npm run dev\"",
     "start:prod": "npm run build && node local-server.js",
-    "start:web": "node local-server.js" 
+    "start:web": "node local-server.js"
   },
   "proxy": "http://localhost:3001",
   "browserslist": {

@@ -10,6 +10,7 @@ import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
 import { OpenAI } from "openai";
+import { ZhipuAI } from 'zhipuai';
 import jwt from 'jsonwebtoken';
 import WebSocket from "ws";
 import { RealtimeRelay } from './relay-server/lib/relay.js';
@@ -215,6 +216,32 @@ const promptGen = async (word) => {
     }
 }
 
+const promptGen_zhipu = async (word) => { 
+    try{
+            const apikey = process.env.ZHIPUAI_API_KEY;
+            if (!apikey) {
+                throw new Error("zhipu API key is not set");
+            }      
+
+            const client = new ZhipuAI({api_key: apikey});
+
+        const response = await client.chat.completions.create(  {  
+            model: 'glm-4',  
+            messages: [
+                { role: 'system', content: 'Create a detailed and imaginative prompt for image generation based on a given word using simple English words as much as possible instead of complicated ones within 4 sentences and 100 words . If the given word is a noun, describe its scenario clearly. If it is a non-noun word, use your imagination to depict a vivid scene or concept related to the word.' },
+                { role: 'user', content: word },
+            ],
+            max_tokens: 100,
+            temperature: 0.7,
+        });
+
+        return response.choices[0].message.content;  
+    }catch(error){
+        console.error('Error generating prompt:', error);
+        return null;
+    }
+}
+
 // Call recraft.ai API to generate image based on the word
 app.get("/api/audio/check", async (req, res) => {
     const { magzine, word } = req.query;
@@ -300,6 +327,46 @@ app.get("/api/recraft/image_prompt", async (req, res) => {
             details: error.message 
         });
     }     
+});
+
+// Call zhipu.ai API to generate image based on the word
+app.get("/api/zhipu/image", async (req, res) => {
+    const { magzine, word } = req.query;
+
+    try {
+        const apikey = process.env.ZHIPUAI_API_KEY;
+        if (!apikey) {
+            throw new Error("zhipu API key is not set");
+        }      
+
+        const prompt = await promptGen_zhipu(word);     
+        //const finalPrompt = 'A detailed illustration of ' + word + ', digital art, high resolution, vibrant colors, intricate details, fantasy style';
+        console.log('generted prompt by openAI:', prompt);
+        const finalPrompt = prompt || word;
+
+        const client = new ZhipuAI({api_key: apikey});
+        const response = await client.images.generate({
+            model: "cogview-4-250304",
+            prompt: finalPrompt,
+        });
+        /*        
+        const response = await client.images.generations( 
+            model="cogview-4-250304", // Specify the model code to call
+            prompt="a little cute cat playing with a ball in the garden, digital art, high resolution, vibrant colors, intricate details, fantasy style",
+            //prompt=finalPrompt,
+        ) */   
+
+        const imgUrl = response.data[0].url;
+        console.log('Image URL from zhipu: ', imgUrl);   
+        
+        res.json({imgURL: imgUrl, prompt: `${finalPrompt}`});
+    } catch(error) {
+        console.error('Error generating image:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate Image from zhipu', 
+            details: error.message 
+        });
+    } 
 });
 
 // Call recraft.ai API to generate image based on the word
