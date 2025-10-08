@@ -29,7 +29,7 @@ import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
+import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
 import './DesktopLayout.scss';
 import './AnnotationLayer.css';
@@ -1836,6 +1836,33 @@ export function DesktopLayout() {
     return selectedText;
   };  
 
+  // Heuristic: does the text look like an (English) sentence?
+  const isEnglishSentence = (raw: string): boolean => {
+    if (!raw) return false;
+    const text = raw
+      .replace(/<[^>]*>/g, ' ')      // strip html
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (text.length < 8) return false;                 // too short
+    if (text.split(/\s+/).length < 3) return false;     // need at least 3 words
+    // Ends with sentence punctuation (allow trailing quote)
+    if (!/[.?!]["']?$/.test(text)) return false;
+
+    // Must start with a letter (after optional quote)
+    if (!/^["']?[A-Z0-9]/.test(text)) return false;
+
+    // Letter ratio
+    const letters = text.match(/[A-Za-z]/g)?.length || 0;
+    if (letters / text.length < 0.55) return false;
+
+    // Contains at least one verb-ish token (very rough)
+    const verbLike = /\b(is|are|was|were|be|being|been|has|have|had|do|did|does|can|will|shall|may|might|must|should|could|would|[A-Za-z]+ing|[A-Za-z]+ed)\b/i;
+    if (!verbLike.test(text)) return false;
+
+    return true;
+  };  
+
   const handleMouseUp = (e: MouseEvent) => {
     setIsDragging(false);
     setIsProgressDragging(false);
@@ -1884,10 +1911,13 @@ export function DesktopLayout() {
       const y = range.top + window.scrollY + 30 + parseFloat(menuHeight) < window.innerHeight ? range.top + window.scrollY + 30 : range.top + window.scrollY - 30 - parseFloat(menuHeight);
       const x = range.left + window.scrollX;
 
+      const sentenceLike = isEnglishSentence(selectedText);      
+
       const wordCardLi = document.getElementById('wordCardLi');  
       const readAloudLi = document.getElementById('readAloudLi');  
       const translateLi = document.getElementById('translateLi');  
       const explainLi = document.getElementById('explainLi');
+      const grammarLi = document.getElementById('grammarLi');
       if( selectedText.includes(' ') || selectedText.includes('\n') || selectedText.length>15 )  
       {// Not likely a single WORD selected, hide the wordCard
         wordCardLi.style.display = 'none';        
@@ -1895,11 +1925,20 @@ export function DesktopLayout() {
         translateLi.style.display = 'block';
         //Explain function is low frequency, so hide it
         explainLi.style.display = 'none';
+
+        if(sentenceLike){
+          grammarLi.style.display = 'block';
+        }else
+        {
+          grammarLi.style.display = 'none';
+        }
+
       }else{
         wordCardLi.style.display = 'block';
         readAloudLi.style.display = 'block';   
         translateLi.style.display = 'none';     
-        explainLi.style.display = 'none';    
+        explainLi.style.display = 'none';   
+        grammarLi.style.display = 'none'; 
         wordCardLi.onclick = async (event) => {
           try{
 
@@ -1954,6 +1993,10 @@ export function DesktopLayout() {
         }        
         chatRef.current.chatFromExternal(`Search videos about '${selectedText}'`);
       };
+
+      if (grammarLi.style.display === 'block' && isEnglishSentence(selectedText)) {
+        grammarLi.onclick = () => analyzeSyntax(selectedText);
+      }      
 
       const talkAboutSelection = document.getElementById('talkAboutSelection');
       talkAboutSelection.onclick = () => selectionTalkAbout(selectedText);
@@ -2305,6 +2348,106 @@ export function DesktopLayout() {
     } 
     return '';
   };
+
+  // Strip HTML tags from highlighted caption
+  const stripHTML = (html: string): string =>
+    html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Pick longest sentence by length
+  const pickLongest = (sentences: string[]): string =>
+    sentences.reduce((a, b) => (b.length > a.length ? b : a), '');  
+
+  // Split a plain caption string into sentences by '.' or '?' keeping punctuation.
+  const splitIntoSentences = (text: string): string[] => {
+    if (!text) return [];
+    const cleaned = stripHTML(text);
+    if (!cleaned) return [];
+    // Split where a '.' or '?' is followed by whitespace + (capital letter / quote / digit)
+    const parts = cleaned.split(/(?<=[.?,])\s+(?=[A-Z0-9"'])/).map(s => s.trim());
+    return parts.filter(s => s.length > 0);
+  };  
+
+  const analyzeSyntax_Caption = ( ) => {
+    const sentences = splitIntoSentences(currentCaption);
+    if (sentences.length === 0) return;
+    sentences
+      .filter(s => s && s.trim().length > 0 && s.length < 1000)
+      .forEach(s => console.log(`Sentence: ${s} (Length: ${s.length})`));    
+
+    console.log();
+
+    const longest = pickLongest(sentences);
+    console.log(`Longest Sentence: ${longest} (Length: ${longest.length})`);
+
+    analyzeSyntax(longest);
+    /*
+    sentences
+      .filter(s => s && s.trim().length > 0 && s.length < 1000)
+      .forEach(s => analyzeSyntax(s));*/
+    // Pick the longest sentence for syntax analysis
+    //analyzeSyntax(pickLongest(sentences));
+    // Loop all sentences (skip empty/too long) and call analyzeSyntax one by one (throttled)
+    /*sentences
+      .filter(s => s && s.trim().length > 0 && s.length < 1000)
+      .forEach((s, i) => {
+        setTimeout(() => analyzeSyntax(s), i * 1000); // 350ms spacing to avoid flooding
+      });    */
+    //analyzeSyntax(pickLongest(sentences));
+    /*
+    const currentCaptionText = currentCaption.replace(/<[^>]+>/g, '').trim();
+    if(currentCaptionText && currentCaptionText.length < 1000){
+      analyzeSyntax(currentCaptionText);
+    }*/
+  }
+
+  const analyzeSyntax = ( sentence: string) => {
+    // Implement syntax analysis logic here
+    console.log("Analyzing syntax...");
+    // Add your syntax analysis code here
+    // help me get the current caption and I will send to gpt-realtime for syntax analysis
+    //const currentCaptionText = currentCaption.replace(/<[^>]+>/g, '').trim();
+    //if(sentence && sentence.length < 1000){
+    if(sentence && sentence.length < 1000){
+      //chatRef.current.chatFromExternal(`analyze syntax: ${currentCaptionText}, the output format should be in json format with the following fields: word, part of speech, definition, synonyms, antonyms, example sentence`);
+
+      //const sentence = 'I love programming because it is fun and rewarding.';
+      const client = clientRef.current;
+      if(client.isConnected()){
+          client.sendUserMessageContent([
+          {
+            type: `input_text`,
+            text: `SyntaxAnalyze: Show sentence syntax analysis about ${sentence} in a way that is easy and fun for a young child to understand with tone Lighthearted, playful, and encouraging like a Enlish teacher.                       
+                    The output should follow the format strictly(if there are no corresponding part of speech, just leave it blank and donot output anything, e.g. there is no Noun Clause in the sentence, donot output this part. if there is not any clauses at all, just leave the clauses part blank and make sure the title: <div><b>从句类型分析</b></div> is also not displayed):
+                    <div><b>句子成分分析</b></div>
+                    - 主语 (Subject): <span className="highlightred"><b>{word or phrase}</b></span>
+                    - 谓语 (Predicate): <span className="highlightorange"><b>{word or phrase}</b></span>
+                    - 宾语 (Object): <span className="highlightgreen"><b>{word or phrase}</b></span>
+                    - 定语 (Attributive): <span className="highlightblue"><b>{word or phrase}</b></span>
+                    - 状语 (Adverbial): <span className="highlightpurple"><b>{word or phrase}</b></span>
+                    - 补语 (Complement): <span className="highlightpink"><b>{word or phrase}</b></span>
+                    <div><b>动词时态分析</b></div>
+                    - 动词 (Verb): <b>{word}</b> 
+                    -- 时态: <b>{tense}</b> 
+                    -- 说明: {brief explanation of tense usage}
+                    <div><b>从句类型分析</b></div>
+                    - 名词性从句 (Noun Clause): {example} 
+                     - 说明: {brief explanation}
+                    - 定语从句 (Relative Clause): {example} 
+                     - 说明: {brief explanation}
+                    - 状语从句 (Adverbial Clause): {example} 
+                     - 说明: {brief explanation}
+            `,
+          },
+        ]);  
+      }       
+
+      const openRightArrow = document.getElementById('openRightArrow');
+      if(openRightArrow){
+        openRightArrow.click();
+      }      
+
+    }
+  }
 
   const getIsMuted = () => {return isMuted;};
 
@@ -3480,7 +3623,7 @@ export function DesktopLayout() {
       {/* Popup Layer for display the video from youtube search triggered by Realtime API  */}      
       <div id="popupOverlay" className="popup-overlay">
         <div id="popupContent" className="popup-content-chat">
-          <span id="closePopup" className="close-button"><X /></span>
+          <span id="closePopup" className="close-button"><X style={{ width: '20px', height: '20px' }} /></span>
           {/* Show flashcards here */}
           <div id="flashcardsContainer"
                style={{
@@ -3519,6 +3662,7 @@ export function DesktopLayout() {
           <li id='wordCardLi'>Word Card/词卡</li>
           <li id='readAloudLi'>Read Aloud/朗读</li>
           <li id='translateLi'>Translate/翻译</li>
+          <li id='grammarLi'>Grammar/语法分析</li>
           <li id='explainLi'>Explain/解释一下</li>
           <li id='searchVideosLi'>Youtube相关视频推荐</li>
           <li style={{display: 'none'}}>Search the web</li>
@@ -4014,6 +4158,8 @@ export function DesktopLayout() {
               color: playbackVolume === 1.0 ? '#fff' : '#000', // Adjust text color for contrast
               borderRadius: '0.3125em',
             }}    onClick={(e) => handleVolumeControlClick(e, 1.0)}>Louder</div>   
+            <div><span className="separator" style={{display: 'none'}}>|</span></div>
+            <div title='Syntax Analyze'><GitBranch color='blue' style={{ width: '17px', height: '17px' }} onClick={analyzeSyntax_Caption} /></div>
             <div><span className="separator">|</span></div>
             <div title='Show Flashcards'><Layers color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleFlashcards} /></div>
             {/* Quiz featue is not ready yet
