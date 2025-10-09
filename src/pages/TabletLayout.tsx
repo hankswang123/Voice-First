@@ -71,9 +71,6 @@ export function TabletLayout() {
     localStorage.setItem('tmp::voice_api_key', apiKey);
   }*/
 
-  //Timer of SearchBox animation effect for Youtube Video
-  let animation: NodeJS.Timeout;    
-
   //Comment out orinial API Key Prompt and 
   //Postpone the Prompt to first unmute click(will enable audio copilot)
   const apiKey = '';
@@ -974,16 +971,6 @@ export function TabletLayout() {
   }
 
   // Handle text are selected, show the popup to read aloud
-
-  //--- Test new connection to zhipu Realtime API  ---  
-  const getJWT = async () => {
-  const tokenResponse = await fetch("/api/zhipu/jwt");
-    //const data = await tokenResponse.json();
-    const jwt = await tokenResponse.text();
-    //const jwt = data.client_secret.value;
-    console.log(jwt);
-    return jwt;    
-  }  
   
   // Try to prevent zoom in/out event for the whole page
   // Status: logic not work yet
@@ -1174,22 +1161,10 @@ export function TabletLayout() {
 
     setPlaybackVolume(volume);
     console.log(`Speed set to ${volume}`);
-  };    
-  
-  const handleLoopClick = (event: SpeedControlClickEvent): void => {
-    event.stopPropagation(); // Prevent the event from bubbling up to the progress bar
-
-    setIsLoop(!isLoop);
-  };    
+  };      
 
   const createHandleTimeUpdate = (audioElement: HTMLAudioElement, currentTime: number, endTime: number) => {
     return () => {
-
-     /* if(!isLoop) {
-        if (timeUpdateHandlerRef.current) {
-          audioElement.removeEventListener('timeupdate', timeUpdateHandlerRef.current);
-        }          
-      }  */    
       
       if (audioElement.currentTime >= endTime) {
         audioElement.currentTime = currentTime; // Reset to start time
@@ -1199,13 +1174,7 @@ export function TabletLayout() {
   };
   
   const createHandleEnded = (audioElement: HTMLAudioElement, currentTime: number, endTime: number) => {
-    return () => {
-
-      /*if(!isLoop) {
-        if (endedHandlerRef.current) {
-          audioElement.removeEventListener('ended', endedHandlerRef.current);
-        }          
-      }    */  
+    return () => { 
 
       if (audioElement.currentTime < endTime) {
         audioElement.currentTime = currentTime;
@@ -1324,23 +1293,6 @@ export function TabletLayout() {
     }    
 
   }
-  
-  const handleKeywordClick = (event: SpeedControlClickEvent, keyword: string, currentTime: number, endTime: number, page: number): void => {
-    event.stopPropagation(); // Prevent the event from bubbling up to the progress bar
-
-    setKeyword(keyword);
-    if (audioRef.current) {
-      audioRef.current.currentTime = currentTime;
-
-      goToPage({ pageNumber: page });
-      const pdfViewer = document.getElementById("pdfFile");
-      if (pdfViewer) {
-        //(pdfViewer as HTMLObjectElement).data = pdfFilePath + `?t=` + (new Date()).getTime() + `#page=` + page;//&t=${new Date().getTime()}
-        (pdfViewer as HTMLObjectElement).data = pdfFilePath1 + `?t=` + (new Date()).getTime() + `#page=` + page;//&t=${new Date().getTime()}
-        console.log((pdfViewer as HTMLObjectElement).data);
-      }
-    }
-  };    
 
   const repeatPrevious = () => {
 
@@ -1401,17 +1353,7 @@ export function TabletLayout() {
       ]);  
 
     }    
-  }
-
-  const translateCurrentCaption = () => {
-    if(currentCaption){
-      if (isPlaying && playPauseBtnRef.current) {
-        playPauseBtnRef.current.click(); // Stop the audio if it's playing
-      }
-      translateSentence(currentCaption);
-    }
-  }  
-
+  } 
 
   useEffect(() => {
     showTranslationRef.current = showTranslation; // Sync ref with the updated state
@@ -1550,22 +1492,6 @@ export function TabletLayout() {
 
   };  
 
-  /*
-  const handleMouseClick = (event: MouseEvent) => {
-
-    const menu = document.getElementById("contextMenu");
-    if (!menu.contains(event.target as Node)) {
-      hideContextMenu();
-    }   
-  };  
-
-  useEffect(() => {
-    document.addEventListener('click', handleMouseClick);
-    return () => {
-      document.removeEventListener('click', handleMouseClick);
-    };
-  }, []);    */
-
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -1613,7 +1539,7 @@ export function TabletLayout() {
 
     try{
       const query = prompt;
-  const response: Response = await fetch(`/api/deepseek/chat?q=${encodeURIComponent(query)}`);
+      const response: Response = await fetch(`/api/deepseek/chat?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         return null;
       }        
@@ -1631,7 +1557,8 @@ export function TabletLayout() {
   const createImageByPrompt = async (prompt) => {
 
     //Generate image by recraft.ai for the given word at the first time
-  const response: Response = await fetch(`/api/recraft/image_prompt?magzine=${encodeURIComponent(newMagzine)}&word=${(prompt)}`);    
+    //const response: Response = await fetch(`/api/recraft/image_prompt?magzine=${encodeURIComponent(newMagzine)}&word=${(prompt)}`);    
+    const response: Response = await fetch(`/api/zhipu/image_prompt?magzine=${encodeURIComponent(newMagzine)}&word=${(prompt)}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -1655,16 +1582,6 @@ export function TabletLayout() {
     if(openRightArrow){
       openRightArrow.click();
     }
-    /* Previous Instruction
-    clientRef.current.updateSession({instructions: `
-      Provide Chinese meaning, part of speech and English phonetic transcription in one line with splitter slash and a new line with two usage examples in English with also their chinese translation for the given word. The two English usage examples should prefer to use the simple words in the sentence. Only output the content and skip the words, e.g. 'Chinese meaning:', 'Part of speech:' or 'English phonetic transcription:'.
-      The output should follow the format:
-      {word}: {chinese meaning1};{chinese meaning1} / {part of speech} / {english phonetic transcription}<br />
-      Usage Examples:
-       - {usage example1 in English} ({chinese translation1})
-       - {usage example2 in English} ({chinese translation1})
-      `});     */
-
       
     const client = clientRef.current;
     if(client.isConnected()){
@@ -1683,50 +1600,9 @@ export function TabletLayout() {
       ]);  
     }  
 
-      /*
-    clientRef.current.updateSession({instructions: `
-      # Personality and Tone
-      ## Identity
-      You are a friendly and playful teacher who loves explaining words to young children (ages 5-7). You make learning fun by using simple words, short sentences, and lots of relatable examples. You enjoy telling mini-stories, using silly comparisons, and making kids smile while they learn.  
-
-      ## Demeanor
-      Cheerful, warm, and engaging—like a fun teacher or a friendly cartoon character who is always excited to help.  
-
-      ## Tone
-      Lighthearted, playful, and encouraging. Every response should feel friendly and full of curiosity.  
-
-      ## Level of Enthusiasm
-      High! You should sound excited about teaching and make learning feel like an adventure.  
-
-      ## Level of Formality  
-      Casual and child-friendly, like a fun conversation rather than a lesson.  
-
-      ## Level of Emotion  
-      Very expressive! Use excitement, surprise, and warmth in your responses.  
-
-      ## Filler Words  
-      Occasionally use playful expressions like “Ooooh!” “Wow!” “Hmm, let’s think!” to make it sound natural.  
-
-      ## Pacing  
-      Moderate, with pauses where needed to make sure the child has time to think and respond.        
-
-      ## Task
-      Your job is to show word card in a way that is easy and fun for a young child to understand.       
-      Provide Chinese meaning, part of speech and English phonetic transcription in one line with splitter slash and a new line with two usage examples in English with also their chinese translation for the given word. The two English usage examples should prefer to use the simple words in the sentence. Only output the content and skip the words, e.g. 'Chinese meaning:', 'Part of speech:' or 'English phonetic transcription:'.
-      The output should follow the format:
-      {word}: {chinese meaning1};{chinese meaning1} / {part of speech} / {english phonetic transcription}<br />
-      Usage Examples:
-       - {usage example1 in English} ({chinese translation1})
-       - {usage example2 in English} ({chinese translation1})
-      `});                    
-    chatRef.current.chatFromExternal(`'${word}'`);
-    await sleep(1500);    
-    //restore the original instructions
-    clientRef.current.updateSession({ instructions: instructions.current }); 
-*/
-
     //Generate image by recraft.ai for the given word at the first time
-  const response: Response = await fetch(`/api/recraft/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
+    //const response: Response = await fetch(`/api/recraft/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
+    const response: Response = await fetch(`/api/zhipu/image?magzine=${encodeURIComponent(newMagzine)}&word=${(word)}`);    
     /*
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -1760,21 +1636,6 @@ export function TabletLayout() {
     }
   }  
 
-  const getSelectedText = () => {
-    const selection = window.getSelection();
-    let selectedText = '';
-  
-    for (let i = 0; i < selection.rangeCount; i++) {
-      const range = selection.getRangeAt(i);
-      if (selectedText) {
-        selectedText += ' '; // Add a space between ranges
-      }      
-      selectedText += range.toString();
-    }
-  
-    return selectedText;
-  };  
-
   // Heuristic: does the text look like an (English) sentence?
   const isEnglishSentence = (raw: string): boolean => {
     if (!raw) return false;
@@ -1802,6 +1663,8 @@ export function TabletLayout() {
     return true;
   };  
 
+  let popupTimeout = null; // Global timeout variable to track dismissal
+  let currentPopup = null; // To keep track of the current popup    
   const handleMouseUp = (e: MouseEvent) => {
     setIsDragging(false);
     setIsProgressDragging(false);
@@ -1944,9 +1807,6 @@ export function TabletLayout() {
 
   };
 
-  let popupTimeout = null; // Global timeout variable to track dismissal
-  let currentPopup = null; // To keep track of the current popup  
-
   const updateProgress = (e: MouseEvent | React.MouseEvent<HTMLDivElement>) => {
       const progressBar = progressBarRef.current;
       if(progressBar)
@@ -1988,14 +1848,13 @@ export function TabletLayout() {
     const closeButton = document.getElementById('closePopup');
     const popupOverlay = document.getElementById('popupOverlay');
     const videoFrame = document.getElementById('videoFrame');  
-    const searchBox = document.getElementById('searchBox');  
     const flashcardsContainer = document.getElementById('flashcardsContainer');
 
     const closeKeywords = document.getElementById('closeKeywords');
     const floatingKeywords = document.getElementById('floatingKeywords');
     const openKeywords = document.getElementById('openKeywords');
 
-    if( closeButton && popupOverlay && videoFrame && searchBox) { 
+    if( closeButton && popupOverlay && videoFrame ) { 
     // Close the popup and stop the video
       closeButton.addEventListener('click', () => {
         (videoFrame as HTMLIFrameElement).src = '';
@@ -2004,7 +1863,6 @@ export function TabletLayout() {
           (flashcardsContainer as HTMLDivElement).style.display = 'none';
         }
 
-        (searchBox as HTMLInputElement).value = ''; // Clear the search box
       });
     }    
 
@@ -2031,14 +1889,12 @@ export function TabletLayout() {
   // Keydown event handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-
-      const searchBox = document.getElementById('searchBox');        
+  
       const chatInputBox = document.getElementById('chatInputBox'); 
       const menuInput = document.getElementById('menuInput');   
       //const webRTCMessage = document.getElementById('webRTCMessage');    
       
       if (e.code === 'Space') {
-        //if (e.target !== searchBox || e.target !== chatInputBox) {
           if (e.target !== chatInputBox && e.target !== menuInput) {
           e.preventDefault(); // Prevent default space bar action (scrolling)        
           /*  
@@ -2081,8 +1937,6 @@ export function TabletLayout() {
             closeRightArrowNew();
           }
 
-          (searchBox as HTMLInputElement).value = ''; // Clear the search box
-
         }
       }
       else if(e.code === 'ArrowLeft'){
@@ -2103,27 +1957,7 @@ export function TabletLayout() {
           repeatCurrentLi.click();
         }
       }         
-      else if (e.code === 'Enter') { 
-        // When Enter is hit in the search box, search for the video       
-        if (e.target === searchBox) {
-          e.preventDefault();
-
-          const searchValue = (searchBox as HTMLInputElement).value.trim();
-          if (searchValue !== '') {
-              if (searchBox) {
-                searchBox.blur();                
-                setTimerforSearchBox(searchValue);
-                /*
-                if(isPlaying){
-                  if (playPauseBtnRef.current) {
-                    playPauseBtnRef.current.click(); // Trigger the button click event
-                  }  
-                }*/
-              }
-              showVideofromYoutube(searchValue);
-            }
-          }        
-        }       
+      
       };
   
     document.addEventListener('keydown', handleKeyDown);
@@ -2132,30 +1966,6 @@ export function TabletLayout() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  const setTimerforSearchBox = (searchValue: string) => {
-    const searchBox = document.getElementById('searchBox');
-
-    let count = 0;
-    const maxDots = 3;
-    const interval = 250; // Time in ms between updates
-    animation = setInterval(() => {
-        count = (count + 1) % (maxDots + 1); // Cycle between 0, 1, 2, 3
-        (searchBox as HTMLInputElement).value = searchValue + ".".repeat(count);
-    }, interval);       
-  }
-
-  const clearTimerforSearchBox = (info: string) => {
-    const searchBox = document.getElementById('searchBox');
-
-    if (animation) {
-      clearInterval(animation); // Stop the animation
-      if (searchBox) {
-        (searchBox as HTMLInputElement).style.color = 'red'; // Reset the color
-        (searchBox as HTMLInputElement).value = info; // Clear the search box
-      }
-    }    
-  }
 
   const toggleAudio = async () => {
     if(isAudioExisting === false){ return; }
@@ -2278,33 +2088,10 @@ export function TabletLayout() {
     console.log(`Longest Sentence: ${longest} (Length: ${longest.length})`);
 
     analyzeSyntax(longest);
-    /*
-    sentences
-      .filter(s => s && s.trim().length > 0 && s.length < 1000)
-      .forEach(s => analyzeSyntax(s));*/
-    // Pick the longest sentence for syntax analysis
-    //analyzeSyntax(pickLongest(sentences));
-    // Loop all sentences (skip empty/too long) and call analyzeSyntax one by one (throttled)
-    /*sentences
-      .filter(s => s && s.trim().length > 0 && s.length < 1000)
-      .forEach((s, i) => {
-        setTimeout(() => analyzeSyntax(s), i * 1000); // 350ms spacing to avoid flooding
-      });    */
-    //analyzeSyntax(pickLongest(sentences));
-    /*
-    const currentCaptionText = currentCaption.replace(/<[^>]+>/g, '').trim();
-    if(currentCaptionText && currentCaptionText.length < 1000){
-      analyzeSyntax(currentCaptionText);
-    }*/
+
   }
 
   const analyzeSyntax = ( sentence: string) => {
-    // Implement syntax analysis logic here
-    console.log("Analyzing syntax...");
-    // Add your syntax analysis code here
-    // help me get the current caption and I will send to gpt-realtime for syntax analysis
-    //const currentCaptionText = currentCaption.replace(/<[^>]+>/g, '').trim();
-    //if(sentence && sentence.length < 1000){
     if(sentence && sentence.length < 1000){
       //chatRef.current.chatFromExternal(`analyze syntax: ${currentCaptionText}, the output format should be in json format with the following fields: word, part of speech, definition, synonyms, antonyms, example sentence`);
 
@@ -2375,7 +2162,6 @@ export function TabletLayout() {
    */
   const showVideofromYoutube = async (query: string) => {
 
-    const searchBox = document.getElementById('searchBox');
     const popupOverlay = document.getElementById('popupOverlay');
     const videoFrame = document.getElementById('videoFrame');
     const imageFrame = document.getElementById('imageFrame');
@@ -2406,8 +2192,6 @@ export function TabletLayout() {
           (popupContent as HTMLIFrameElement).className = 'popup-content-video';
           if (popupOverlay){
             popupOverlay.style.display = 'flex';
-            clearTimerforSearchBox(query);
-            (searchBox as HTMLInputElement).style.color = 'blue'; // Reset the color
 
             // Insert the video searched into the conversation list at the same time
             chatRef.current.updateVideo(`<iframe width="100%" height="95%" src="${embedUrl}" style={{ borderRadius: '9px'}} allowfullscreen></iframe>`);
@@ -2433,16 +2217,13 @@ export function TabletLayout() {
 
           }
         } else {
-          clearTimerforSearchBox('Error occurred during video search.');
           console.log('Failed to convert to embeddable URL.');
         }
       } else {
-        clearTimerforSearchBox('No results found.');
         console.log('No results found.');
       }
     })
     .catch((error) => {
-      clearTimerforSearchBox('Error occurred during YouTube search');
       console.error('Error occurred during YouTube search:', error);
     });                    
   }
@@ -2585,24 +2366,12 @@ export function TabletLayout() {
   * Unmute recording, the audio copilot by first unmuting the recording  
   */
   const unmuteRecording = async () => {
-    //setIsMuted(false);
-    //const wavRecorder = wavRecorderRef.current;
     const client = clientRef.current;
     if (client.isConnected()){
       setIsMuted(false);
 
       const wavRecorder = wavRecorderRef.current;      
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-      //for test, to trigger start of conversation      
-      /*
-      client.sendUserMessageContent([
-        {
-          type: `input_text`,
-          text: `Hello!,I have a question`,
-          //text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-          //text: `Search a video about zebras`,
-        },
-      ]);*/
     } else {
       setIsMuteBtnDisabled(true);
       switchAudioCopilot('server_vad');
@@ -2678,18 +2447,7 @@ export function TabletLayout() {
         //And also avoid touching codes of RealtimeClient.connect() and RealtimeAPI.connect()        
         if (client.isConnected()) {
           throw new Error(`Already connected, use .disconnect() first`);
-        }
-
-        //Test the Ephemeral Key rather than using the static API key
-        //Connect successfully, but model always reply: I'm sorry, but I can't assist with that request.
-        /*
-        const tokenResponse = await fetch("/api/session");
-        const data = await tokenResponse.json();
-        const EPHEMERAL_KEY = data.client_secret.value;     
-        client.realtime.apiKey = EPHEMERAL_KEY;   
-        console.log("Using Ephemeral Key to connect to OpenAI Realtime API:", EPHEMERAL_KEY); 
-        */
-        //End of Ephemeral Key test          
+        }     
 
         // use mini model by default for saving cost: 'gpt-4o-mini-realtime-preview-2024-12-17'
         // select latest GA Model: 'gpt-realtime' for better quality
@@ -2726,58 +2484,6 @@ export function TabletLayout() {
     await wavStreamPlayer.interrupt();   
 
   }, []);
-
-  /** Test for capturing audio from other apps
-   * Capture audio from other apps, e.g. Microsoft Teams, 
-   * This could be a new feature for Audio Copilot to prepare an reference answer when user is 
-   * in an interview or in a customer-facing issue resolution.
-   */
-  async function captureAudioToPCM16() {
-    const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true });
-    const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(stream);
-
-    const processor = audioContext.createScriptProcessor(4096, 1, 1);
-    source.connect(processor);
-    processor.connect(audioContext.destination);
-
-    processor.onaudioprocess = (audioEvent) => {
-        const float32Data = audioEvent.inputBuffer.getChannelData(0);
-        const pcm16Data = new Int16Array(float32Data.length);
-
-        // Convert Float32 to PCM16
-        for (let i = 0; i < float32Data.length; i++) {
-            let s = Math.max(-1, Math.min(1, float32Data[i]));
-            pcm16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        }
-
-        // pcm16Data now contains the PCM16 audio data
-        console.log(pcm16Data);
-        // You can now send pcm16Data to a server, save to file, etc.
-    };
-  }
-//captureAudioToPCM16();
-
-  /**
-   * Utility for formatting the timing of logs
-
-  const formatTime = useCallback((timestamp: string) => {
-    const startTime = startTimeRef.current;
-    const t0 = new Date(startTime).valueOf();
-    const t1 = new Date(timestamp).valueOf();
-    const delta = t1 - t0;
-    const hs = Math.floor(delta / 10) % 100;
-    const s = Math.floor(delta / 1000) % 60;
-    const m = Math.floor(delta / 60_000) % 60;
-    const pad = (n: number) => {
-      let s = n + '';
-      while (s.length < 2) {
-        s = '0' + s;
-      }
-      return s;
-    };
-    return `${pad(m)}:${pad(s)}.${pad(hs)}`;
-  }, []);*/
 
   /**
    * When you click the API key
@@ -2898,22 +2604,6 @@ export function TabletLayout() {
         },
       },
       async({ query }: { query: string }) => {
-
-        // To show the loading animation in the search box when searching for the video
-        // Clear the search box and show the loading animation
-        const searchBox = document.getElementById('searchBox');  
-        if (searchBox) {
-          (searchBox as HTMLInputElement).value = query; // Clear the search box
-
-          let count = 0;
-          const maxDots = 3;
-          const interval = 250; // Time in ms between updates
-          animation = setInterval(() => {
-              count = (count + 1) % (maxDots + 1); // Cycle between 0, 1, 2, 3
-              (searchBox as HTMLInputElement).value = query + ".".repeat(count);
-          }, interval);            
-
-        }        
 
         await showVideofromYoutube(query);        
         //return imageDescriptionRef.current;
@@ -3152,97 +2842,6 @@ export function TabletLayout() {
         }
       }
     );        
-    // Collecting Feedback
-    client.addTool(
-      { //Capabilities demo: when a lister wants to provide feedback
-        //or similarly, sharing it to a friend...
-        name: 'feedback_collection',
-        description:
-          'Collect feedback from the user. e.g. feedback on the company AI first strategy...',
-        parameters: {
-          type: 'object',
-          properties: {
-            title: {
-              type: 'string',
-              description: 'feedback title',
-            },
-            content: {
-              type: 'string',
-              description: 'feedback content',
-            },
-          },
-          required: ['title', 'content'],
-        },
-      },
-      async ({ title, content }: { [key: string]: any }) => {
-        return { ok: true, info: 'Thanks for your feedback' };
-      }
-    );
-    // Search realtime stock price
-    client.addTool(
-      { //Capabilities demo: to retrieve the latest stock for a given company
-        //e.g. get_stock_price(company: 'SAP') when valuation of SAP is heard, 
-        //user is just a tiny SAP stock holder and want to check the latest SAP stock prcie 
-        name: 'get_stock_price',
-        description:
-          'Retrieves the latest stock price for a given comppany. ',
-        parameters: {
-          type: 'object',
-          properties: {
-            company: {
-              type: 'string',
-              description: 'Name of the company',
-            },
-          },
-          required: ['company'],
-        },
-      },
-      async ({ company }: { [key: string]: any }) => {
-        /*
-        const result = await fetch(
-          `https://api.openai.com/v1/stock_price?company=${company}`
-        );*/
-        const result = {
-          ok: true,
-          date: '2024-10-25',
-          company: 'SAP',
-          price: 237.69,
-          currency: 'USD',
-        };
-        //const json = await result.json();
-        return result;
-      }
-    );    
-    // Send mail to a friend
-    client.addTool(
-      { //Capabilities demo: when a listener wants to send a mail to a friend
-        name: 'send_mail',
-        description:
-          'help the user to send the mail to a specific Recipient',
-        parameters: {
-          type: 'object',
-          properties: {
-            title: {
-              type: 'string',
-              description: 'feedback title',
-            },
-            content: {
-              type: 'string',
-              description: 'feedback content',
-            },
-            to: {
-              type: 'string',
-              description: 'mail receiver',
-            },            
-          },
-          required: ['query'],
-        },
-      },
-      async ({ title, content }: { [key: string]: any }) => {
-        return { ok: true, info: 'Thanks for mail' };
-      }
-    );
-    // hanks
 
     // handle realtime events from client + server for event logging
     client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
@@ -3586,7 +3185,6 @@ export function TabletLayout() {
               borderRadius: '0.3125em',
               whiteSpace: 'nowrap',
             }}
-            //onClick={(e) => handleKeywordClick(e, key, value1, value2, value3)} // Directly play the keyword segment
             onClick={(e) => loopKeywordPlay(e, key, value1, value2, value3)} // Loop play the keyword segment
           >
             {index+1}.{key} {/* Display the key */}
@@ -4066,16 +3664,7 @@ export function TabletLayout() {
                 backgroundColor: playbackRate === 1.2 ? '#666' : '#ccc', // Darker if active
                 color: playbackRate === 1.2 ? '#fff' : '#000', // Adjust text color for contrast
                 borderRadius: '0.3125em',
-              }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div> 
-              
-              {/* Loop button to loop the current audio 
-              <div></div> 
-              <div className="speed-control"         style={{
-                display: 'none',
-                backgroundColor: isLoop === true ? '#666' : '#ccc', // Darker if active
-                color: isLoop === true ? '#fff' : '#000', // Adjust text color for contrast
-                borderRadius: '0.3125em',
-              }}    onClick={(e) => handleLoopClick(e)}>Loop</div>    */}     
+              }}    onClick={(e) => handleSpeedControlClick(e, 1.2)}>Faster</div>    
                                         
               <div><span className="separator">|</span></div>
 
@@ -4135,19 +3724,6 @@ export function TabletLayout() {
               color: keyword !== '' ? '#fff' : '#000', // Adjust text color for contrast
               borderRadius: '0.3125em',
             }}    onClick={(e) => handleClearKeyword(e)} title='Clear Keyword Play Looping'>{keyword === '' ? 'Select a Keyword to Dive in' : keyword }</div> 
-            {/* Test: Place the search box for video at the right-down of progress bar area */}  
-            <div style={{position: 'fixed', transform:'translateX(41.5em)', bottom: '1px'}}>
-              <input id="searchBox" 
-                    type="text"                      
-                    className='dynamic-searchBox' 
-                    placeholder="Type and Press Enter to Search a Video" 
-                    style={{display:"none"}}
-                    onFocus={() => { const searchBox = document.getElementById('searchBox');                                        
-                                      (searchBox as HTMLInputElement).value = ''; 
-                                      (searchBox as HTMLInputElement).style.color = 'blue'; 
-                                    }} 
-              /> 
-            </div>  
           </div>
 
           {/* Display the current play time and Total time */}

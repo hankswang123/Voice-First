@@ -1,4 +1,4 @@
-import React, {forwardRef, useImperativeHandle, useState, useEffect, useRef } from "react";
+import React, {forwardRef, useImperativeHandle, useState, useEffect, useRef, useLayoutEffect } from "react";
 import styles from "./Chat.module.css";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw"; // required to render raw HTML - render iframe in chat
@@ -256,14 +256,30 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
   const [threadId, setThreadId] = useState("");
   const threadIdRef = useRef<string | null>(null); 
   const [items, setItems] = useState<ItemType[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  //const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chatModel, setChatModel] = useState("GPT-Realtime");
   const [isChecked, setIsChecked] = useState(true);
 
   const [deviceType, setDeviceType] = useState<ReturnType<typeof detectDevice>>(detectDevice());
 
+  const messagesContainerRef = useRef<HTMLDivElement|null>(null);
+  const inputFormRef = useRef<HTMLFormElement|null>(null);
+  const firstScrollDoneRef = useRef(false);  
+
+  /*
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };*/
+
+  const scrollToBottom = (behavior: ScrollBehavior) => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    //el.scrollTo({ top: el.scrollHeight, behavior });
+
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    });     
+
   };
 
   // Use useImperativeHandle to define functions that the parent can call
@@ -349,9 +365,33 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
 
   }));  
 
+  /*
   useEffect(() => {
     scrollToBottom();
-  }, [messages, items]);
+  }, [messages, items]);*/
+
+  // Measure input height before paint so padding computations stable
+  useLayoutEffect(() => {
+    if (inputFormRef.current) {
+      const h = inputFormRef.current.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--input-height', `${Math.ceil(h)}px`);
+    }
+  }, []);
+
+  // Auto scroll when messages change (skip smooth on first non-empty render; skip entirely while length === 1)
+  useEffect(() => {
+    if (!messagesContainerRef.current) return;
+    if (messages.length === 0) return;
+
+    if (!firstScrollDoneRef.current) {
+      // Perform a synchronous (no animation) scroll once after first message to avoid jump
+      scrollToBottom('auto');
+      firstScrollDoneRef.current = true;
+      return;
+    }
+    // Later messages use smooth scroll
+    scrollToBottom('smooth');
+  }, [messages, items]);  
 
   const getThreadId = async () => {
     /*
@@ -664,17 +704,19 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
 
   return (
     <div className={styles.chatContainer}>
-      <div className={styles.messages}>
+      <div ref={messagesContainerRef} className={styles.messages}>
         {messages.map((msg, index) => (
           <Message key={index} role={msg.role} text={msg.text} items={items} />
         ))}
-        <div ref={messagesEndRef} />      
+        {/*<div ref={messagesEndRef} />*/}
       </div>
       <form
+        ref={inputFormRef}
         id="inputForm"
         onSubmit={handleSubmit}
         className={`${styles.inputForm} ${!realtimeClient.isConnected() ? 'no-connection' : ''}`}
-        style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px"}}        
+        //style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px"}}        
+        style={{border: '1px solid green',marginLeft: '0px', marginRight: "1px"}}        
       >    
         <input
           id="chatInputBox"

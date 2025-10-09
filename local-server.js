@@ -329,6 +329,38 @@ app.get("/api/recraft/image_prompt", async (req, res) => {
     }     
 });
 
+// Call recraft.ai API to generate image based on the provided prompt
+app.get("/api/zhipu/image_prompt", async (req, res) => {
+    const { magzine, word } = req.query;
+
+    try {
+        const finalPrompt = word; 
+
+        const apikey = process.env.RECRAFT_API_KEY;
+        if (!apikey) {
+            throw new Error("recraft API key is not set");
+        } 
+
+        const client = new ZhipuAI({api_key: apikey});
+        const response = await client.images.generate({
+            model: "cogview-4-250304",
+            prompt: finalPrompt,
+        });  
+
+        const imgUrl = response.data[0].url;
+        console.log('Image URL from zhipu: ', imgUrl);   
+        
+        res.json({imgURL: imgUrl, prompt: `${finalPrompt}`});
+
+    } catch(error) {
+        console.error('Error generating image:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate Image from zhipu', 
+            details: error.message 
+        });
+    }     
+});
+
 // Call zhipu.ai API to generate image based on the word
 app.get("/api/zhipu/image", async (req, res) => {
     const { magzine, word } = req.query;
@@ -341,20 +373,14 @@ app.get("/api/zhipu/image", async (req, res) => {
 
         const prompt = await promptGen_zhipu(word);     
         //const finalPrompt = 'A detailed illustration of ' + word + ', digital art, high resolution, vibrant colors, intricate details, fantasy style';
-        console.log('generted prompt by openAI:', prompt);
+        console.log('generted prompt by zhipu:', prompt);
         const finalPrompt = prompt || word;
 
         const client = new ZhipuAI({api_key: apikey});
         const response = await client.images.generate({
             model: "cogview-4-250304",
             prompt: finalPrompt,
-        });
-        /*        
-        const response = await client.images.generations( 
-            model="cogview-4-250304", // Specify the model code to call
-            prompt="a little cute cat playing with a ball in the garden, digital art, high resolution, vibrant colors, intricate details, fantasy style",
-            //prompt=finalPrompt,
-        ) */   
+        });  
 
         const imgUrl = response.data[0].url;
         console.log('Image URL from zhipu: ', imgUrl);   
