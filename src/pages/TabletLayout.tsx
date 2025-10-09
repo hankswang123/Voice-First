@@ -31,18 +31,19 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
 import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
-import './TabletLayout.scss';
-import './AnnotationLayer.css';
-import './TextLayer.css';
+import './style/TabletLayout.scss';
+
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
 import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
 import { Button } from '../components/button/Button';
 
-import { Document, Page } from 'react-pdf';
 //import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 //import 'react-pdf/dist/esm/Page/TextLayer.css';
+import './style/react-pdf/AnnotationLayer.css';
+import './style/react-pdf/TextLayer.css';
+import { Document, Page } from 'react-pdf';
 import html2canvas from 'html2canvas';
 
 /**
@@ -491,16 +492,6 @@ export function TabletLayout() {
     }    
   }
 
-  // Initialize the keywords with the first magazine
-  /*
-  useEffect(() => {
-    const bInstructions = async () => {
-      const instructions = await buildInstructions();
-      setNewInstructions(instructions); 
-    };
-
-    bInstructions(); // Call the async function
-  }, []);     */
 
   const setAudioExisting = async ({magzine} = {magzine: magzines[0]}) => {
 
@@ -629,12 +620,12 @@ export function TabletLayout() {
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
 
-  // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
-  setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
+    // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
+    setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
 
     // check whether the audio file exists
     const placeholder = 'hello';
-  const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
+    const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -882,12 +873,6 @@ export function TabletLayout() {
 
   const closeRightPanel = () => {
 
-    /*
-    const muteButton = document.getElementById('muteButton');
-    if(muteButton){
-      muteButton.style.display = 'flex';
-    } */   
-
     setIsCloseRightPanelDisabled(true);
     const splitter = document.getElementById('splitter');
     const chatBot = document.getElementById('chatContainer');
@@ -897,12 +882,6 @@ export function TabletLayout() {
       splitter.style.display = 'none';
       (rightPanel as HTMLDivElement).style.display = 'none';
       chatBot.style.display = 'none';
-      //conversationDivRef.current.style.display = 'flex'; 
-
-      /* isMuted = true when UI button IS NOT Muted
-      if(!isMuted){
-        toggleMuteRecording();
-      }     */ 
     }
   }
 
@@ -995,46 +974,6 @@ export function TabletLayout() {
   }
 
   // Handle text are selected, show the popup to read aloud
-  let readAloudBuffer = null; // Global buffer to store the read aloud audio
-  const selectionTTS = async (input: string) => { 
-
-    if(readAloudBuffer) {
-      wavStreamPlayerRef.current.add16BitPCM(readAloudBuffer);
-    }else{
-      const pcm = await openai.audio.speech.create({
-        model: "tts-1",
-        voice: tts_voice,
-        response_format: "pcm",
-        speed: 1.0,
-        input: input,
-      });
-      const pcmArrayBuffer = await pcm.arrayBuffer(); // Convert the response to an ArrayBuffer
-      const readAloudPcm = new Int16Array(pcmArrayBuffer);
-      wavStreamPlayerRef.current.add16BitPCM(readAloudPcm);
-
-      // Insert the selection into the chat as user message
-      chatRef.current.updateSelection(input);
-
-      // If selection is an English word or a phrase
-      // provide a definition and example sentences
-      if(input.length < 100) {
-        chatRef.current.explainSelection(`如果所选择的${input}是单个英文或者是一个词组，那么给出它的中文解释，并且提供两个英文例句，同时给出例句的翻译。如果是一个句子，那么直接给出它的翻译`);
-      }      
-
-      const wavFile = await WavRecorder.decode(
-        readAloudPcm,
-        24000,
-        24000
-      );    
-      // Insert the TTS audio into the chat as assistant message （show on the left side of the conversation panel）
-      chatRef.current.updateReadAloud(wavFile.url);
-
-      readAloudBuffer = readAloudPcm;
-
-      hideContextMenu();
-      openChatbot();
-    }
-  }
 
   //--- Test new connection to zhipu Realtime API  ---  
   const getJWT = async () => {
@@ -2007,47 +1946,6 @@ export function TabletLayout() {
 
   let popupTimeout = null; // Global timeout variable to track dismissal
   let currentPopup = null; // To keep track of the current popup  
-  const showPopup = (x, y, text) => {
-    // Clear previous popup and timeout if it exists
-    if (currentPopup) {
-      currentPopup.remove();
-      clearTimeout(popupTimeout);
-      readAloudBuffer = null; // Clear the buffer
-    }
-
-    const popup = document.createElement('div');
-    popup.id = 'readAloudPopup';
-    //popup.className = 'read-aloud-popup';
-    popup.textContent = 'Read Aloud';
-    popup.style.position = 'absolute';
-    popup.style.left = `${x + 10}px`; // Adjust position as needed
-    popup.style.top = `${y + 10}px`; // Adjust position as needed
-    popup.style.backgroundColor = '#fff';
-    popup.style.border = '1px solid #000';
-    popup.style.borderRadius = '4px';
-    popup.style.padding = '5px';
-    popup.style.cursor = 'pointer';
-    popup.style.zIndex = '2001';
-    popup.onclick = () => selectionTTS(text);
-  
-  // Attach mouse leave event to manage timeout
-    popup.onmouseleave = () => {
-      popupTimeout = setTimeout(() => {
-        popup.remove();
-        currentPopup = null; // Reset the current popup
-        readAloudBuffer = null; // Clear the buffer
-      }, 1000); // 3-second delay
-    };
-
-  // Clear the timeout if the mouse re-enters
-    popup.onmouseenter = () => {
-      clearTimeout(popupTimeout);
-    };    
-
-    document.body.appendChild(popup);
-    currentPopup = popup;
-    readAloudBuffer = null; // Clear the buffer
-  };
 
   const updateProgress = (e: MouseEvent | React.MouseEvent<HTMLDivElement>) => {
       const progressBar = progressBarRef.current;

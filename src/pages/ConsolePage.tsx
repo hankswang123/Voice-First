@@ -31,9 +31,8 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
 import {Layers, HelpCircle, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
-import './ConsolePage.scss';
-import './AnnotationLayer.css';
-import './TextLayer.css';
+import './style/ConsolePage.scss';
+
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
 import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
@@ -43,6 +42,8 @@ import { Button } from '../components/button/Button';
 import { Document, Page } from 'react-pdf';
 //import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 //import 'react-pdf/dist/esm/Page/TextLayer.css';
+import './style/react-pdf/AnnotationLayer.css';
+import './style/react-pdf/TextLayer.css';
 import html2canvas from 'html2canvas';
 
 /**
