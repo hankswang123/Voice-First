@@ -42,7 +42,7 @@
   bottom: 51.5px;  /* leave some space for iPad home indicator */
   background: #fff;
   padding: 4px 6px;
-  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); /* iPad bottom inset */
+  /*padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));  iPad bottom inset */
   border-radius: 14px;
   z-index: 5;
 }
