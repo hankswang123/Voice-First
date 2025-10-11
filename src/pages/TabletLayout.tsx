@@ -2233,7 +2233,8 @@ export function TabletLayout() {
    */
   async function performYoutubeSearch(query: string): Promise<Array<{ title: string, url: string }>> {
     try {
-  const response: Response = await fetch(`/api/serp/videos?q=${encodeURIComponent(query)}`);
+
+      const response: Response = await fetch(`/api/serp/videos?q=${encodeURIComponent(query)}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -2604,11 +2605,9 @@ export function TabletLayout() {
         },
       },
       async({ query }: { query: string }) => {
+        console.log('Youtube search tool is called');
 
-        await showVideofromYoutube(query);        
-        //return imageDescriptionRef.current;
-        //return imageDescription;
-
+        await showVideofromYoutube(query);
         if(!isMuteBtnDisabled && !isMuted){
           muteBtnRef.current.click();
         }        
@@ -2712,7 +2711,9 @@ export function TabletLayout() {
         },
       },
       async({ prompt }: { prompt: string }) => {
-        createImageByPrompt(prompt);
+        console.log('Image creation tool is called');
+        console.log('Image creation prompt: ', prompt);
+        await createImageByPrompt(prompt);
         return { ok: true };
       }
     );         
@@ -3108,7 +3109,7 @@ export function TabletLayout() {
   `;   
 
   /**
-   * Render the application
+   * Render the Tablet Layout
    */
   return (
   <div data-component="tabletLayout" className="tablet-layout-root">
@@ -3565,40 +3566,6 @@ export function TabletLayout() {
                 onClick={toggleFlashcards}
                 className='button'
         />
-       
-        { /*
-        <div className="tooltip-container" style={{userSelect: 'none', display: hasKeywords ? 'flex' : 'none' }}>
-          <Button
-                  label={'Keywords'}
-                  iconPosition={'start'}
-                  icon={BookOpen}
-                  buttonStyle={'regular'}
-                  className='button'
-          /> 
-          <div className="tooltip" style={{backgroundColor: 'rgb(255, 255, 255, 1)', width: 'auto', height: 'auto'}}>
-            <ul style={{listStyle: 'none', marginLeft:'10px', textAlign: 'left', padding: '0px'}}> 
-              {Object.entries(Keywords.current as Record<string, [number, number, number]>).map(([key, [value1, value2, value3]], index) => value3 !== 0 && (
-                <li
-                  key={index} // Use index as the key for React
-                  className={`hover-effect ${keyword === key ? 'active' : ''}`}
-                  style={{
-                    borderRadius: '0.3125em',
-                    whiteSpace: 'nowrap',
-                    textAlign: 'left',
-                    fontSize: '1.5em',
-                    cursor: 'pointer',
-                    marginRight: '20px',
-                    marginLeft: '10px',
-                  }}
-                  onClick={(e) => loopKeywordPlay(e, key, value1, value2, value3)} // Loop play the keyword segment
-                >
-                  {index+1}.{key}
-                </li>
-              ))}
-            </ul>
-          </div> 
-        </div>
-        */}
 
         {/* Show/Hide Captions Button */}
         <div className="content-caption" style={{userSelect: 'none'}}>
