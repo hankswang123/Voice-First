@@ -36,7 +36,8 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  position: sticky; /* stays at bottom even if container scrolls */
+  /*position: sticky; /* stays at bottom even if container scrolls */
+  position:relative;
   /*bottom: 0;*/
   bottom: 51.5px;  /* leave some space for iPad home indicator */
   background: #fff;
@@ -71,25 +72,60 @@ audio::-webkit-media-controls-seek-forward-button {
 }  
 
 .input {
-  line-height: 1.35;
-  max-height: 200px; /* cap growth */
-  overflow-y: auto;
-
-  /*Enhanced CSS to make sure inputForm fixed during message scrollbar scrolling*/
+  flex: 1 1 50%;
+  min-width: 0;
+  width: 50%;
   box-sizing: border-box;
-  /*Enhanced CSS  */
-  flex-grow: 1;
-  padding: 6px 10px;
-  margin-right: 10px;
-  border-radius: 60px;
-  border: 2px solid transparent;
-  font-size: 1.2em;
-  /*background-color: #efefef;*/
+  font: inherit;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border: none;              /* hide border */
+  outline: none;
+  resize: none;
+  background: transparent;
+  min-height: 38px;
+  max-height: 200px;
+  overflow-y: hidden;        /* default hidden */
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  border-radius: 30px;
+  padding-right: 75px; /* make space for buttons */
 }
 
-/* 默认占位符颜色 */
-input::placeholder {
+/* While NOT overflowing (data-overflow="0") keep scrollbar hidden */
+textarea.input[data-overflow="0"] {
+  overflow-y: hidden;
+  scrollbar-width: none;              /* Firefox */
+}
+
+/* Hide WebKit scrollbar when not overflowing */
+textarea.input[data-overflow="0"]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* When overflowing (data-overflow="1") show scrollbar */
+textarea.input[data-overflow="1"] {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Optional styling of visible scrollbar */
+textarea.input[data-overflow="1"]::-webkit-scrollbar {
+  width: 6px;
+}
+textarea.input[data-overflow="1"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+textarea.input[data-overflow="1"]::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.25);
+  border-radius: 3px;
+}
+
+/* Placeholder */
+textarea.input::placeholder {
   color: gray;
+  opacity: 1;
 }
 
 /* 没有网络连接时的占位符颜色 
@@ -106,12 +142,37 @@ tbd: not work as expected!!!
   background-color: white;
 }*/
 
+/*
+.inputWrapper {
+  display:block;
+}*/
+
+.inputWrapper {
+  position:relative;
+  width:100%;
+  display:flex;
+}
+
+.inputActions {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  transform: translateY(2px);
+  padding-top: 5px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  pointer-events:auto;
+  max-width:25%;
+}
+
 .button {
   /*Enhanced CSS to make sure inputForm fixed during message scrollbar scrolling*/
   box-sizing: border-box;
   margin-right: 20px;
   /*Enhanced CSS  */
   padding: 8px 24px;
+  padding-top: 5px;
   background-color: #ececf1;
   color: #101010;
   border: none;

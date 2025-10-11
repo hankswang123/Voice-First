@@ -3129,7 +3129,9 @@ export function TabletLayout() {
                 alignItems: 'center',
                 backgroundColor: 'lightgrey'
               }}> <Flashcards cards={flashcards} realtimeClient={clientRef.current} /></div>
+          {/* Show Youtube Video here */}              
           <iframe id="videoFrame" width="800" height="450" src="" allow="fullscreen" allowFullScreen style={{display: 'none'}}></iframe>
+          {/* Show Image created here */} 
           <img id="imageFrame" src="" alt="Image"
                 onDoubleClick={() => {
                   const popupOverlay = document.getElementById('popupOverlay');

@@ -279,6 +279,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
     }
   };  
 
+  /*
   useEffect(() => {
     // auto-resize
     if (textareaRef.current) {
@@ -286,7 +287,25 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
       ta.style.height = 'auto';
       ta.style.height = ta.scrollHeight + 'px';
     }
-  }, [userInput]);  
+  }, [userInput]);  */
+
+useEffect(() => {
+  const ta = textareaRef.current;
+  if (!ta) return;
+  const MAX = 200; // keep in sync with CSS max-height
+
+  // Reset to auto to measure natural height
+  ta.style.height = 'auto';
+  const needed = ta.scrollHeight;
+
+  if (needed <= MAX) {
+    ta.style.height = needed + 'px';
+    ta.dataset.overflow = '0';
+  } else {
+    ta.style.height = MAX + 'px';
+    ta.dataset.overflow = '1';
+  }
+}, [userInput]);
 
   /*
   const scrollToBottom = () => {
@@ -741,7 +760,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
         //style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px"}}        
         style={{border: '1px solid green',marginLeft: '0px', marginRight: "1px"}}        
       >    
-
+      <div className={styles.inputWrapper}>
         <textarea
           id="chatInputBox"
           ref={textareaRef}
@@ -751,13 +770,6 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           onKeyDown={handleTextareaKeyDown}
           rows={1}
           placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
-          style={{
-            marginRight: '1px',
-            border: 'none',
-            outline: 'none',
-            resize: 'none',
-            overflow: 'hidden'
-          }}
         />
 
         {/** 
@@ -771,28 +783,31 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
           //disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  */}
-        <Button
-          title={realtimeClient.isConnected() ? "" : "Connect to talk"}
-          type="submit"
-          className={styles.button}
-          disabled={realtimeClient.isConnected() ? false : true}
-          label={''}
-          iconPosition={'end'}
-          icon={ getIsMuted() ? MicOff : Mic}          
-          style={{fontSize: 'medium', marginLeft: '1px', marginRight: '1px', display: userInput.trim() === '' ? 'flex' :'none' }}
-        />                        
-        <Button
-              title={realtimeClient.isConnected() ? "" : "Connect to chat"}
+          <div className={styles.inputActions}>
+            <Button
+              title={realtimeClient.isConnected() ? "" : "Connect to talk"}
               type="submit"
-              id="submitButton"
               className={styles.button}
+              disabled={realtimeClient.isConnected() ? false : true}
               label={''}
               iconPosition={'end'}
-              icon= { Send }
-              buttonStyle={'regular'}
-              onFocus={() => {console.log('Mute/Unmute icon should not be displayed'); }}
-              style={{fontSize: 'medium', marginLeft: '1px', marginRight: '0px', display: userInput.trim() === '' ? 'none' :'flex'}}
-            /> 
+              icon={ getIsMuted() ? MicOff : Mic}          
+              style={{fontSize: 'medium', marginLeft: '1px', marginRight: '1px', display: userInput.trim() === '' ? 'flex' :'none' }}
+            />                        
+            <Button
+                  title={realtimeClient.isConnected() ? "" : "Connect to chat"}
+                  type="submit"
+                  id="submitButton"
+                  className={styles.button}
+                  label={''}
+                  iconPosition={'end'}
+                  icon= { Send }
+                  buttonStyle={'regular'}
+                  onFocus={() => {console.log('Mute/Unmute icon should not be displayed'); }}
+                  style={{fontSize: 'medium', marginLeft: '1px', marginRight: '0px', display: userInput.trim() === '' ? 'none' :'flex'}}
+                /> 
+          </div>
+        </div>
         <input
           id='checkBox'
           type="checkbox"
