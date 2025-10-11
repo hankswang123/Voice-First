@@ -25,8 +25,11 @@
   display: flex;
   flex-direction: column;
   white-space: pre-wrap;
-
   scrollbar-gutter: stable both-edges;
+}
+
+.messages > :last-child {
+  margin-bottom: 40px; /* adds gap so last message not stuck to textarea */
 }
 
 .inputForm {
@@ -35,7 +38,7 @@
   align-items: center;
   position: sticky; /* stays at bottom even if container scrolls */
   /*bottom: 0;*/
-  bottom: 51.5px; /* leave some space for iPad home indicator */
+  bottom: 51.5px;  /* leave some space for iPad home indicator */
   background: #fff;
   padding: 4px 6px;
   padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); /* iPad bottom inset */
@@ -68,6 +71,10 @@ audio::-webkit-media-controls-seek-forward-button {
 }  
 
 .input {
+  line-height: 1.35;
+  max-height: 200px; /* cap growth */
+  overflow-y: auto;
+
   /*Enhanced CSS to make sure inputForm fixed during message scrollbar scrolling*/
   box-sizing: border-box;
   /*Enhanced CSS  */

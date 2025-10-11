@@ -3755,13 +3755,8 @@ export function TabletLayout() {
               label={isMuted ? '' : ''}
               iconPosition={'start'}
               icon={!isConnected? Zap : isMuted ? MicOff : Mic}
-              //icon={!isConnected? Zap : !isCloseRightPanelDisabled ? X : isMuted ? MicOff : Mic}
-              //disabled={ (isConnected&&!isCloseRightPanelDisabled) ? true: false}
-              //disabled={isMuteBtnDisabled}
-              //disabled={!isConnected}
               buttonStyle={'regular'}
               onClick={toggleMuteRecording}
-              //className='hidden-button'
             />
           <div className="tooltip"  style={{display: isCaptionVisible && 'none'}}>
             <strong className='tooltip-title'>Turn <>{isMuted ? 'on' : 'off'}</> microphone</strong><br />

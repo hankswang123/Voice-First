@@ -266,6 +266,28 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
   const inputFormRef = useRef<HTMLFormElement|null>(null);
   const firstScrollDoneRef = useRef(false);  
 
+  const textareaRef = useRef<HTMLTextAreaElement|null>(null);
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      // submit the form
+      const form = inputFormRef.current;
+      if (form) {
+        form.requestSubmit(); // triggers onSubmit
+      }
+    }
+  };  
+
+  useEffect(() => {
+    // auto-resize
+    if (textareaRef.current) {
+      const ta = textareaRef.current;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }
+  }, [userInput]);  
+
   /*
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -690,7 +712,8 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
     setIsChecked(event.target.checked);
   }
 
-  function handleInputOnChange(event: React.ChangeEvent<HTMLInputElement>): void {
+  //function handleInputOnChange(event: React.ChangeEvent<HTMLInputElement>): void {
+  function handleInputOnChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
     //setIsChecked(event.target.checked);
     setUserInput(event.target.value);
 
@@ -718,6 +741,26 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
         //style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px"}}        
         style={{border: '1px solid green',marginLeft: '0px', marginRight: "1px"}}        
       >    
+
+        <textarea
+          id="chatInputBox"
+          ref={textareaRef}
+          className={styles.input}
+          value={userInput}
+          onChange={handleInputOnChange}
+          onKeyDown={handleTextareaKeyDown}
+          rows={1}
+          placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
+          style={{
+            marginRight: '1px',
+            border: 'none',
+            outline: 'none',
+            resize: 'none',
+            overflow: 'hidden'
+          }}
+        />
+
+        {/** 
         <input
           id="chatInputBox"
           type="text"
@@ -727,7 +770,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
           //disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
-        />  
+        />  */}
         <Button
           title={realtimeClient.isConnected() ? "" : "Connect to talk"}
           type="submit"

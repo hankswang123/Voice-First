@@ -1692,7 +1692,7 @@ export function DesktopLayout() {
   const createImageByPrompt = async (prompt) => {
 
     //Generate image by recraft.ai for the given word at the first time
-  const response: Response = await fetch(`/api/recraft/image_prompt?magzine=${encodeURIComponent(newMagzine)}&word=${(prompt)}`);    
+  const response: Response = await fetch(`/api/zhipu/image_prompt?magzine=${encodeURIComponent(newMagzine)}&word=${(prompt)}`);    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
