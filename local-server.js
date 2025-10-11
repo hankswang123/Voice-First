@@ -89,11 +89,9 @@ app.get("/api/serp/videos", async (req, res) => {
             }
         });
 
-        //const videoResults = response.data.news_results;
-        //console.log(response);
         const videoResults = response.data.video_results;
-        console.log("Video results:");
-        console.log(videoResults);
+        console.log("Video results returned:");
+        console.log(videoResults[0]);
         res.json(videoResults);
     } catch (error) {
         console.error("Detailed error:", error);
@@ -329,16 +327,19 @@ app.get("/api/recraft/image_prompt", async (req, res) => {
     }     
 });
 
-// Call recraft.ai API to generate image based on the provided prompt
+// Call zhipu API to generate image based on the provided prompt
 app.get("/api/zhipu/image_prompt", async (req, res) => {
+
+    console.log('Image Creation requested... '); 
+
     const { magzine, word } = req.query;
 
     try {
         const finalPrompt = word; 
 
-        const apikey = process.env.RECRAFT_API_KEY;
+        const apikey = process.env.ZHIPUAI_API_KEY;
         if (!apikey) {
-            throw new Error("recraft API key is not set");
+            throw new Error("zhipu API key is not set");
         } 
 
         const client = new ZhipuAI({api_key: apikey});
