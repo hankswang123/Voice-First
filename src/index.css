@@ -12,10 +12,15 @@ body {
   color: #18181b;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  overflow: hidden;              /* no window scrollbars */
+  overscroll-behavior: none;     /* disable bounce on supported browsers */
+  -webkit-overflow-scrolling: auto;  
 }
 
 #root {
   position: relative;
+  overflow: hidden;
   width: 100%;
   height: 100%;
 }
