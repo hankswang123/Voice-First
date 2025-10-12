@@ -33,7 +33,8 @@ import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp,
 
 import './style/DesktopLayout.scss';
 import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
-import Chat, {openai} from '../components/chat_desktop/Chat';
+//import Chat, {openai} from '../components/chat_desktop/Chat';
+import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
 import { Button } from '../components/button/Button';

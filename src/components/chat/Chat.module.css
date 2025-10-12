@@ -84,7 +84,7 @@ audio::-webkit-media-controls-seek-forward-button {
   resize: none;
   background: transparent;
   min-height: 38px;
-  max-height: 200px;
+  max-height: 400px;
   overflow-y: hidden;        /* default hidden */
   overflow-x: hidden;
   white-space: pre-wrap;
