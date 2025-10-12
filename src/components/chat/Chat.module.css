@@ -15,13 +15,18 @@
   font-style: normal;
 }
 
+:root {
+  --chat-h-gutter: 0px; /* reduce from 10px */
+}
+
 .messages {
   flex: 1 1 auto;
   min-height: 0; /* critical for scroll in flex */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 10px;
+  /*padding: 10px;*/
+   padding: 10px var(--chat-h-gutter) 10px var(--chat-h-gutter);
   display: flex;
   flex-direction: column;
   white-space: pre-wrap;
@@ -196,8 +201,12 @@ tbd: not work as expected!!!
   padding: 4px 8px;
   align-self: flex-start;
   border-radius: 15px;
-  max-width: 80%;
+  /*max-width: 80%;*/
   overflow-wrap: break-word;
+
+  max-width: 80%;          /* was 80% */
+  margin-left: 0;
+  margin-right: 0;  
 }
 
 .assistantMessage img {
