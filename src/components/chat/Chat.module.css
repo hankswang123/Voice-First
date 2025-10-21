@@ -54,6 +54,8 @@
 audio{
     width: 100px;
     height: 30px;
+    display: block;
+    margin-left: 10px; /* global gap */    
 }
 
 audio::-webkit-media-controls-panel {
@@ -195,7 +197,7 @@ tbd: not work as expected!!!
 
 .userMessage,
 .assistantMessage,
-.codeMessage
+.codeMessage,
 .audioMessage {
   margin: 8px 0;
   padding: 4px 8px;
@@ -205,7 +207,8 @@ tbd: not work as expected!!!
   overflow-wrap: break-word;
 
   max-width: 80%;          /* was 80% */
-  margin-left: 0;
+  /*margin-left: 0;*/
+  margin-left: 10px;      /* small gap */
   margin-right: 0;  
 }
 
@@ -259,4 +262,44 @@ tbd: not work as expected!!!
 .codeMessage span {
   color: #b8b8b8;
   margin-right: 8px;
+}
+
+/*
+.flexLayout .inputForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.flexLayout .inputActions {
+  position: static;
+  transform: none;
+}*/
+
+.narrow .userMessage {
+  align-self: flex-start;
+  margin-left: 0;
+  margin-right: auto;
+  max-width: 100%;
+}
+
+/*.messages { scrollbar-gutter: stable both-edges; }*/
+.messages { scrollbar-gutter: stable; }
+
+.userMessage {
+  max-width: calc(100% - 4px);  /* was 80%; allow almost full width */
+  margin-right: 2px;             /* tiny buffer from edge/scrollbar */
+  /* keep existing left margin (10px) */
+}
+
+/* Move ONLY the audio (play icon) area further right */
+.audioMessage {
+  margin-left: 22px;      /* adjust distance from left edge */
+  padding-left: 6px;      /* optional inner spacing */
+}
+
+/* Or, if you prefer to keep bubble edge aligned and just nudge the control: */
+.audioMessage > audio {
+  display: block;
+  margin-left: 12px;      /* adjust this instead of .audioMessage margin-left */
 }

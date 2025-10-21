@@ -43,6 +43,22 @@ app.use(cors({
 
 app.use(express.json());
 
+// Dynamic magazines (folder names under public/play)
+app.get("/api/magazines", (req, res) => {
+  try {
+    const playDir = path.join(process.cwd(), 'public', 'play');
+    const entries = fs.readdirSync(playDir, { withFileTypes: true });
+    const magazines = entries
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+      .sort();
+    res.json({ magazines });
+  } catch (e) {
+    console.error('Failed to list magazines:', e);
+    res.status(500).json({ error: 'Failed to list magazines' });
+  }
+});
+
 // Call SERPAPI API to fetch news articles from google news
 app.get("/api/serp/news", async (req, res) => {
     try {
@@ -239,6 +255,29 @@ const promptGen_zhipu = async (word) => {
         return null;
     }
 }
+
+// Call recraft.ai API to generate image based on the word
+app.get("/api/audio/get", async (req, res) => {
+    const { magzine, word } = req.query;
+
+    try {
+        const dirPath = path.join(__dirname, `public/play/${magzine}`);
+        const audioPath = path.join(dirPath, `${magzine}.wav`);
+        if(fs.existsSync(path.join(dirPath, `${magzine}.wav`))){
+            res.json({audioURL: `/play/${magzine}/${magzine}.wav`});
+        } else if(fs.existsSync(path.join(dirPath, `${magzine}.mp3`))) {
+            res.json({audioURL: `/play/${magzine}/${magzine}.mp3`});
+        } else {
+            res.json({audioURL: `none`});
+        }
+    } catch(error) {
+        console.error('Error getting audio file:', error);
+        res.status(500).json({ 
+            error: 'Failed to get audio file', 
+            details: error.message 
+        });
+    }     
+});
 
 // Call recraft.ai API to generate image based on the word
 app.get("/api/audio/check", async (req, res) => {

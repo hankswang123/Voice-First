@@ -51,6 +51,27 @@ export async function fetchKeywords({magzine} = {magzine: magzines[0]}) {
         console.error(error);}
 }
 
+let cachedMagzines = null;
+
+export async function fetchMagzinesDynamic() {
+  if (cachedMagzines) return cachedMagzines;
+  try {
+    const resp = await fetch(`/api/magazines`);
+    if (!resp.ok) throw new Error('Bad response');
+    const data = await resp.json();
+    if (Array.isArray(data.magazines) && data.magazines.length) {
+      cachedMagzines = data.magazines;
+      return cachedMagzines;
+    }
+    cachedMagzines = fallbackMagzines;
+    return cachedMagzines;
+  } catch (e) {
+    console.warn('Using fallbackMagzines:', e);
+    cachedMagzines = fallbackMagzines;
+    return cachedMagzines;
+  }
+}
+
 // To fetch the audio scripts from the public/play folder
 async function fetchAudioScripts({magzine} = {magzine: magzines[0]}) {
     const response = await fetch(`./play/${magzine}/audio_scripts.txt`);

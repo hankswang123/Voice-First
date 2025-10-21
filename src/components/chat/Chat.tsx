@@ -65,10 +65,30 @@ const UserMessage = ({ text }: { text: string }) => {
   switch (messageType) {
     case "text":
       if(!text.includes('Read Aloud:') && !text.includes('Translate:') && !text.includes('wordcard:') ){
-        return <div className={styles.userMessage}>
+       /* return <div className={styles.userMessage}>
                 <Markdown rehypePlugins={[rehypeRaw]}
                 >{preprocessText(text)}</Markdown>
-              </div>
+              </div>*/
+
+        return (
+          <div
+            className={styles.userMessage}
+            style={{
+              boxSizing: 'border-box',
+              //paddingRight: '4px',        // small base
+              paddingRight: '0px',          // was 4px
+              marginRight: '10px',         // closer to edge              
+              overflowWrap: 'anywhere',   // prevent hard trim
+              wordBreak: 'break-word',
+              maxWidth: '100%'            // ensure full width usage
+            }}
+          >
+            <Markdown rehypePlugins={[rehypeRaw]}>
+              {preprocessText(text)}
+            </Markdown>
+          </div>
+        );              
+
       }else{return null;}
     case "image":
       return <div className={styles.userMessage}>
@@ -268,6 +288,33 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
 
   const textareaRef = useRef<HTMLTextAreaElement|null>(null);
 
+  const baseLineHeightRef = useRef<number | null>(null);  
+
+  function handleTextareaFocus() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    if (ta.value.trim() !== '') return; // has content, do nothing
+    const cs = getComputedStyle(ta);
+    const lineH = parseFloat(cs.lineHeight) || 20;
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const oneLine = lineH + padY;
+    const twoLines = lineH * 2 + padY;
+    baseLineHeightRef.current = oneLine;
+    ta.dataset.lockHeight = '1';        // prevent auto-resize effect from overwriting
+    ta.style.height = `${twoLines}px`;
+  }
+
+  function handleTextareaBlur() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    if (ta.value.trim() === '') {
+      // revert to single line
+      const oneLine = baseLineHeightRef.current;
+      if (oneLine) ta.style.height = `${oneLine}px`;
+    }
+    ta.dataset.lockHeight = '0';
+  }  
+
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -292,7 +339,10 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
 useEffect(() => {
   const ta = textareaRef.current;
   if (!ta) return;
-  const MAX = 200; // keep in sync with CSS max-height
+  //const MAX = 200; // keep in sync with CSS max-height
+
+  if (ta.dataset.lockHeight === '1') return; // skip while focused empty (2-line mode)
+  const MAX = 400;  
 
   // Reset to auto to measure natural height
   ta.style.height = 'auto';
@@ -301,9 +351,11 @@ useEffect(() => {
   if (needed <= MAX) {
     ta.style.height = needed + 'px';
     ta.dataset.overflow = '0';
+    setInputOverflow(false);              // <== NEW
   } else {
     ta.style.height = MAX + 'px';
     ta.dataset.overflow = '1';
+    setInputOverflow(true);               // <== NEW
   }
 }, [userInput]);
 
@@ -744,9 +796,35 @@ useEffect(() => {
     }
   }  
 
+  // Add a one‑time boolean (or just inline directly)
+  const useFlexLayout = true;
+  const [inputOverflow, setInputOverflow] = useState(false); // <== NEW
+  // 1. Add state + effect (minimal TSX change)
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    // Only measure when overflow (scrollbar appears)
+    const hasVerticalScroll = el.scrollHeight > el.clientHeight;
+    const sbw = hasVerticalScroll ? (el.offsetWidth - el.clientWidth) : 0;
+    if (sbw !== scrollbarWidth) setScrollbarWidth(sbw);
+  }, [messages, items, scrollbarWidth]);  
+
   return (
-    <div className={styles.chatContainer}>
-      <div ref={messagesContainerRef} className={styles.messages}>
+    <div 
+    
+        //className={styles.chatContainer}
+        className={`${styles.chatContainer} ${inputOverflow ? styles.narrow : ''}`} // <== NEW class toggle
+        
+      >
+      <div ref={messagesContainerRef} className={styles.messages}
+
+      style={{ 
+        //paddingRight: scrollbarWidth ? scrollbarWidth : undefined 
+        //paddingRight: scrollbarWidth ? Math.max(scrollbarWidth - 2, 0) : 0
+      }}
+      >
         {messages.map((msg, index) => (
           <Message key={index} role={msg.role} text={msg.text} items={items} />
         ))}
@@ -757,10 +835,13 @@ useEffect(() => {
         id="inputForm"
         onSubmit={handleSubmit}
         className={`${styles.inputForm} ${!realtimeClient.isConnected() ? 'no-connection' : ''}`}
+
+        //className={`${styles.inputForm} ${useFlexLayout ? 'flexLayout' : ''} ${!realtimeClient.isConnected() ? 'no-connection' : ''}`}
         //style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px"}}        
         style={{border: '1px solid green',marginLeft: '0px', marginRight: "1px"}}        
       >    
       <div className={styles.inputWrapper}>
+      {/*<div  style={{ flex: '0 0 75%', maxWidth: '75%', display: 'flex', minWidth: 0 }}>*/}
         <textarea
           id="chatInputBox"
           ref={textareaRef}
@@ -768,8 +849,20 @@ useEffect(() => {
           value={userInput}
           onChange={handleInputOnChange}
           onKeyDown={handleTextareaKeyDown}
+          onFocus={handleTextareaFocus}
+          onBlur={handleTextareaBlur}          
           rows={1}
           placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
+
+          /*data-overflow="0"
+          style={{
+            flex: '1 1 auto',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            paddingRight: '12px',      // remove old 75px gap
+            overflowY: 'hidden'
+          }}  */        
         />
 
         {/** 
@@ -783,7 +876,21 @@ useEffect(() => {
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
           //disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  */}
-          <div className={styles.inputActions}>
+          <div className={styles.inputActions}
+          
+          /*
+              style={{
+                position: 'static',          // override absolute from CSS
+                flex: '0 0 25%',
+                maxWidth: '25%',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'flex-end',
+                gap: '8px',
+                transform: 'none',           // neutralize translateY
+                paddingTop: 0
+              }}    */      
+          >
             <Button
               title={realtimeClient.isConnected() ? "" : "Connect to talk"}
               type="submit"
@@ -793,6 +900,8 @@ useEffect(() => {
               iconPosition={'end'}
               icon={ getIsMuted() ? MicOff : Mic}          
               style={{fontSize: 'medium', marginLeft: '1px', marginRight: '1px', display: userInput.trim() === '' ? 'flex' :'none' }}
+
+              //style={{ display: userInput.trim() === '' ? 'flex' : 'none' }}
             />                        
             <Button
                   title={realtimeClient.isConnected() ? "" : "Connect to chat"}
@@ -805,6 +914,8 @@ useEffect(() => {
                   buttonStyle={'regular'}
                   onFocus={() => {console.log('Mute/Unmute icon should not be displayed'); }}
                   style={{fontSize: 'medium', marginLeft: '1px', marginRight: '0px', display: userInput.trim() === '' ? 'none' :'flex'}}
+
+                  //style={{ display: userInput.trim() === '' ? 'none' : 'flex' }}
                 /> 
           </div>
         </div>

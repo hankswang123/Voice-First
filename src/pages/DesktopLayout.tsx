@@ -32,7 +32,8 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
 
 import './style/DesktopLayout.scss';
-import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
+//import { fetchMagzinesDynamic, magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
+import {fetchMagzinesDynamic, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
 //import Chat, {openai} from '../components/chat_desktop/Chat';
 import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
@@ -167,11 +168,11 @@ export function DesktopLayout() {
 
   const timeUpdateHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
-  const [isLoop, setIsLoop] = useState(false);
+  const [isLoop, setIsLoop] = useState(false); 
 
-  // Use absolute path for PDF so production build (served from /) resolves correctly.
-  const [pdfFilePath1, setpdfFilePath1] = useState(`/play/${magzines[0]}/${magzines[0]}.pdf`);
+  // Use absolute path for PDF so production build (served from /) resolves correctly.  
   // Debug: preflight HEAD request to surface any 404 early (removed in production when stable)
+  /*
   useEffect(() => {
     if (!pdfFilePath1) return;
     (async () => {
@@ -182,8 +183,22 @@ export function DesktopLayout() {
         console.error('[PDF][HEAD] failed', pdfFilePath1, e);
       }
     })();
-  }, [pdfFilePath1]);
+  }, [pdfFilePath1]);*/
+
+  /* replace static reference
+  const [pdfFilePath1, setpdfFilePath1] = useState(`/play/${magzines[0]}/${magzines[0]}.pdf`);
   const [audioFilePath1, setaudioFilePath1] = useState(`./play/${magzines[0]}/${magzines[0]}.wav`);
+  const [newMagzine, setNewMagzine] = useState(`${magzines[0].replace(/[_-]/g, " ")}`);
+  */
+
+  /* dynamic detect pdf resource  */
+  const [magzines, setMagzines] = useState<string[]>([]); 
+  const [magazinesLoading, setMagazinesLoading] = useState(true);
+  const [pdfFilePath1, setpdfFilePath1] = useState('');
+  const [audioFilePath1, setaudioFilePath1] = useState('');
+  const [newMagzine, setNewMagzine] = useState('');
+  /* dynamic detect pdf resource  */
+
   const [isAudioExisting, setIsAudioExisting] = useState(false);
   const [isScriptExisting, setIsScriptExisting] = useState(false);
   
@@ -196,8 +211,6 @@ export function DesktopLayout() {
   const [newInstructions, setNewInstructions] = useState('');
   const instructions = useRef(newInstructions);   
 
-  const [newMagzine, setNewMagzine] = useState(`${magzines[0].replace(/[_-]/g, " ")}`);
-
   const [isSelecting, setIsSelecting] = useState(false);
   const selectionStart = useRef({ x: 0, y: 0 });
   const selectionRef = useRef(null);
@@ -208,6 +221,30 @@ export function DesktopLayout() {
   
   interface FlashcardItem { front: string; back: string; }
   const [flashcards, setFlashcards] = useState<FlashcardItem[]>([]);
+
+  /* dynamic detect pdf resource  */
+  useEffect(() => {
+    (async () => {
+      const list = await fetchMagzinesDynamic();
+      console.log('Magzines Loaded:', list);
+      setMagzines(list);
+      setMagazinesLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!magzines.length) return;
+    const first = magzines[0];
+    setNewMagzine(first.replace(/[_-]/g, ' '));
+    console.log('First Magzine:', first);
+    //setpdfFilePath1(`/play/${first}/${first}.pdf`);
+    //setaudioFilePath1(`./play/${first}/${first}.wav`);
+    setpdfFilePath1(`/play/${encodeURIComponent(first)}/${encodeURIComponent(first)}.pdf`); 
+    setaudioFilePath1(`/play/${encodeURIComponent(first)}/${encodeURIComponent(first)}.wav`);    
+    // kick off initial asset checks
+    setAudioExisting({ magzine: first });
+  }, [magzines]);  
+  /* dynamic detect pdf resource  */
 
 // 修改初始状态，添加 pairIndex
   const [selectionBox, setSelectionBox] = useState({ 
@@ -503,10 +540,14 @@ export function DesktopLayout() {
     bInstructions(); // Call the async function
   }, []);     */
 
-  const setAudioExisting = async ({magzine} = {magzine: magzines[0]}) => {
+  //const setAudioExisting = async ({magzine} = {magzine: magzines[0]}) => {
+  const setAudioExisting = async ({ magzine }: { magzine?: string } = {}) => {
+
+  if (!magzines.length) return; // wait
+  if (!magzine) magzine = magzines[0];    
 
     const placeholder = 'hello';
-  const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(magzine)}&word=${(placeholder)}`);    
+    const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(magzine)}&word=${(placeholder)}`);    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -529,7 +570,8 @@ export function DesktopLayout() {
 
         if( res.keywordsExisting === 'true' )
         {
-          setNewKeywords( await fetchKeywords({magzine: magzines[0]}) );      
+          //setNewKeywords( await fetchKeywords({magzine: magzines[0]}) );      
+          setNewKeywords( await fetchKeywords({magzine}) );      
         }      
         
       } else {
@@ -558,7 +600,8 @@ export function DesktopLayout() {
     } 
     
     if(res.flashcardsExisting === 'true'){
-      const flashcards = await getFlashcards({magzine: magzines[0]});
+      //const flashcards = await getFlashcards({magzine: magzines[0]});
+      const flashcards = await getFlashcards({magzine});
       //console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     }else {
@@ -568,9 +611,13 @@ export function DesktopLayout() {
   };  
 
   // Initialize the keywords with the first magazine
+  /*
   useEffect(() => {
     setAudioExisting(); // Call the async function
-  }, []);   
+  }, []);*/
+
+  /* dynamic detect pdf resource  */
+  useEffect(() => { if (magzines.length) setAudioExisting(); }, [magzines]);
 
   // Check if there are any keywords with count > 0
   // Keywords icon display control
@@ -630,12 +677,13 @@ export function DesktopLayout() {
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
 
-  // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
-  setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
+    console.log('Selected Magzine:', newMagzine);
+    // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
+    setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
 
     // check whether the audio file exists
     const placeholder = 'hello';
-  const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
+    const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -646,8 +694,18 @@ export function DesktopLayout() {
     if (audioExisting === 'true') {
       setIsAudioExisting(true);  
 
-      setaudioFilePath1(`./play/${newMagzine}/${newMagzine}.wav`);
+      
+      const placeholder = 'hello';
+      const response: Response = await fetch(`/api/audio/get?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }         
 
+      const audioURL = res.audioURL;
+      console.log('Audio URL Fetched:', audioURL);
+      //setaudioFilePath1(audioURL);
+      //audioRef.current.src = audioURL;
+      setaudioFilePath1(`./play/${newMagzine}/${newMagzine}.wav`);
       audioRef.current.src = `./play/${newMagzine}/${newMagzine}.wav`;
       audioRef.current.currentTime = 0;    
       setProgress(0);
@@ -4337,13 +4395,21 @@ export function DesktopLayout() {
               </div>               
               <div className="speed-controls">
                 <div title='Select a new issue'><Book style={{ width: '13px', height: '13px' }} />:</div>
+                {/*magzine selection dropdown
                 <select id="Magzine" name="Magzine" onChange={handleSelectChange} style={{height: '20px', width:'90%'}}>            
                   {magzines.map((magazine, index) => (
                           <option key={index} value={magazine}>
                               {magazine}
                           </option>
                       ))}
-                </select>                            
+                </select> 
+                */}   
+                <select id="Magzine" name="Magzine" onChange={handleSelectChange} disabled={magazinesLoading || !magzines.length} style={{height:'20px', width:'90%'}}>
+                  {magazinesLoading && <option>Loading...</option>}
+                  {!magazinesLoading && magzines.map((magazine, index) => (
+                    <option key={index} value={magazine}>{magazine}</option>
+                  ))}
+                </select>                                    
               </div>                                                                                             
             </div>                         
           </div>   
