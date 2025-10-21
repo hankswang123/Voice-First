@@ -240,7 +240,7 @@ export function DesktopLayout() {
     //setpdfFilePath1(`/play/${first}/${first}.pdf`);
     //setaudioFilePath1(`./play/${first}/${first}.wav`);
     setpdfFilePath1(`/play/${encodeURIComponent(first)}/${encodeURIComponent(first)}.pdf`); 
-    setaudioFilePath1(`/play/${encodeURIComponent(first)}/${encodeURIComponent(first)}.wav`);    
+    //setaudioFilePath1(`/play/${encodeURIComponent(first)}/${encodeURIComponent(first)}.wav`);    
     // kick off initial asset checks
     setAudioExisting({ magzine: first });
   }, [magzines]);  
@@ -558,6 +558,26 @@ export function DesktopLayout() {
     if (audioExisting === 'true') {
       setIsAudioExisting(true);  
 
+      const placeholder = 'hello';
+      const responseAudio: Response = await fetch(`/api/audio/get?magzine=${encodeURIComponent(magzine)}&word=${(placeholder)}`);    
+      if (!responseAudio.ok) {
+        throw new Error(`HTTP error! status: ${responseAudio.status}`);
+      }         
+
+      const resAudio: any = await responseAudio.json();      
+      const audioURL = resAudio.audioURL;
+      console.log('Audio URL Fetched:', audioURL);
+      setaudioFilePath1(audioURL);      
+
+      if (audioRef.current) {
+        console.log('Updating existing audioRef with new source:', audioURL);
+        audioRef.current.src = audioURL;
+        audioRef.current.pause();
+      } else {
+        console.log('Creating new audioRef with source:', audioURL);
+        audioRef.current = new Audio(audioURL);
+      }
+
       if( res.scriptExisting === 'true' )
       {
         setIsScriptExisting(true);
@@ -696,22 +716,24 @@ export function DesktopLayout() {
 
       
       const placeholder = 'hello';
-      const response: Response = await fetch(`/api/audio/get?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const responseAudio: Response = await fetch(`/api/audio/get?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
+      if (!responseAudio.ok) {
+        throw new Error(`HTTP error! status: ${responseAudio.status}`);
       }         
 
-      const audioURL = res.audioURL;
+      const resAudio: any = await responseAudio.json();      
+      const audioURL = resAudio.audioURL;
       console.log('Audio URL Fetched:', audioURL);
-      //setaudioFilePath1(audioURL);
-      //audioRef.current.src = audioURL;
-      setaudioFilePath1(`./play/${newMagzine}/${newMagzine}.wav`);
-      audioRef.current.src = `./play/${newMagzine}/${newMagzine}.wav`;
+      setaudioFilePath1(audioURL);
+      audioRef.current.src = audioURL;
+      //setaudioFilePath1(`./play/${newMagzine}/${newMagzine}.wav`);
+      //audioRef.current.src = `./play/${newMagzine}/${newMagzine}.wav`;
       audioRef.current.currentTime = 0;    
       setProgress(0);
       setCurrentTime(0);
       if(isPlaying){toggleAudio();}
 
+      setCurrentCaption('');    
       if( res.scriptExisting === 'true' )
       {      
         setIsScriptExisting(true);
@@ -723,7 +745,7 @@ export function DesktopLayout() {
 
         client.updateSession({ instructions: newInstructions });      
       }else{
-        setIsScriptExisting(false);        
+        setIsScriptExisting(false);    
         setNewInstructions( basicInstructions );
         if(isCaptionVisible){
           setIsCaptionVisible(false);
@@ -748,10 +770,13 @@ export function DesktopLayout() {
       audioRef.current.src = '';
       audioRef.current.currentTime = 0;    
       setProgress(0);
-      setCurrentTime(0);            
+      setCurrentTime(0);          
+      
+      if(isPlaying){setIsPlaying(false);}
 
       //client.updateSession({ instructions: 'You are a helpful assistant and ready to answer any question' });         
       setIsScriptExisting(false);
+      setCurrentCaption('');
       setNewInstructions( basicInstructions );
       client.updateSession({ instructions: basicInstructions });      
 
@@ -1193,6 +1218,7 @@ export function DesktopLayout() {
 
   // Load the audio file when the component mounts
   useEffect(() => {
+    console.log(' Initial Audio File Path:', audioFilePath1);
     audioRef.current = new Audio(audioFilePath1);
 
     return () => {
@@ -3762,14 +3788,15 @@ export function DesktopLayout() {
       </ul>
 
       {/* Floating buttons for control the caption size and repeat current/last caption */}
-      <ul className="floating-captionsize" style={{display: !isCaptionVisible && 'none' }}>
+      { isScriptExisting && isCaptionVisible && ( 
+      <ul className="floating-captionsize">
         <li onClick={repeatCurrent}id='repeatCurrentLi'  title='Repeat current caption'><Repeat style={{ width: '15px', height: '15px' }} /></li>
         <li onClick={repeatPrevious} id='repeatPreviousLi'><SkipBack style={{ width: '15px', height: '15px' }} /></li>
         <li onClick={repeatForward} id='repeatForwardLi'><SkipForward style={{ width: '15px', height: '15px' }} /></li>
         <li onClick={showTranslateCurrentCaption} title='Translation'><Globe style={{ width: '15px', height: '15px' }} /></li>
         <li onClick={() => adjustCaptionFontSize(+0.1)}><ZoomIn style={{ width: '15px', height: '15px' }} /></li>
         <li onClick={() => adjustCaptionFontSize(-0.1)}><ZoomOut style={{ width: '15px', height: '15px' }} /></li>
-      </ul>
+      </ul> )}
       {/* Test Floating button */}
       <div className="floating-button" ref={floatingButtonRef}  
              onMouseDown={handleDragStart}
@@ -4118,7 +4145,7 @@ export function DesktopLayout() {
           <div className="captionsize" style={{display: isCaptionVisible? 'none' : 'flex'}}>Show caption to adjust it's size</div>
         </div>
         {/* Add a div to display the current caption */}
-        {isCaptionVisible && ( 
+        { isScriptExisting && isCaptionVisible && ( 
           <div id='captionDisplay' className="caption-display"
                dangerouslySetInnerHTML={{ __html: currentCaption }}
                style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
