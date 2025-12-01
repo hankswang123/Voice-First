@@ -1,0 +1,182 @@
+[
+    {
+        "front": "How many hours a day do koalas sleep?",
+        "back": "Up to 20 hours.",
+        "front_translation": "考拉每天睡多少小时？",
+        "back_translation": "最多达20小时。"
+    },
+    {
+        "front": "What is the primary reason koalas sleep so much?",
+        "back": "Their diet of toxic, low-nutrient eucalyptus leaves requires massive energy to detoxify.",
+        "front_translation": "考拉睡这么多的主要原因是什么？",
+        "back_translation": "它们以有毒且营养极低的桉树叶为食，需要大量能量来解毒。"
+    },
+    {
+        "front": "Are koalas bears?",
+        "back": "No, they are marsupials with pouches.",
+        "front_translation": "考拉是熊吗？",
+        "back_translation": "不是，它们是有育儿袋的袋类动物。"
+    },
+    {
+        "front": "What surprising human-like feature do koalas have?",
+        "back": "Fingerprints (dermal ridges) similar to humans.",
+        "front_translation": "考拉有什么令人惊讶的类人特征？",
+        "back_translation": "指纹（皮嵴），与人类相似。"
+    },
+    {
+        "front": "Why do baby koalas need fingerprints?",
+        "back": "To help them grip their mother’s fur while climbing into the pouch and later clinging to her back.",
+        "front_translation": "为什么小考拉需要指纹？",
+        "back_translation": "帮助它们抓住母亲的毛发，爬进育儿袋，并在之后紧贴母亲背部。"
+    },
+    {
+        "front": "What is the stick insect’s camouflage behavior?",
+        "back": "It sways gently back and forth to mimic a twig moving in the wind.",
+        "front_translation": "竹节虫的伪装行为是什么？",
+        "back_translation": "它会轻轻左右摇摆，模仿树枝在风中晃动。"
+    },
+    {
+        "front": "What makes the Malayan tapir’s black-and-white pattern effective camouflage?",
+        "back": "It breaks up the animal’s outline in the dappled light of dense rainforests.",
+        "front_translation": "为什么马来貘的黑白图案能有效伪装？",
+        "back_translation": "在茂密雨林斑驳的光线下，能打散其身体轮廓。"
+    },
+    {
+        "front": "What is the Malayan tapir’s flexible nose called?",
+        "back": "A proboscis.",
+        "front_translation": "马来貘那根灵活的鼻子叫什么？",
+        "back_translation": "吻部（proboscis）。"
+    },
+    {
+        "front": "What do young tapirs do for survival?",
+        "back": "They stick close to their mothers for food and protection.",
+        "front_translation": "小貘如何求生？",
+        "back_translation": "它们紧跟着母亲，依赖她获取食物和保护。"
+    },
+    {
+        "front": "Where do golden lion tamarins live their entire lives?",
+        "back": "In the tree canopy.",
+        "front_translation": "金狮狨一生都在哪里生活？",
+        "back_translation": "树冠层。"
+    },
+    {
+        "front": "What is special about golden lion tamarins’ fingers?",
+        "back": "They are long and probe-like, used to extract insects from bark crevices.",
+        "front_translation": "金狮狨的手指有什么特别之处？",
+        "back_translation": "细长如探针，用于从树皮缝隙中掏出昆虫。"
+    },
+    {
+        "front": "How many species of tamarins are mentioned in the sources?",
+        "back": "19 different species.",
+        "front_translation": "资料中提到了多少种狨猴？",
+        "back_translation": "19种。"
+    },
+    {
+        "front": "What do humpback whales use to filter food from seawater?",
+        "back":": "Baleen plates made of keratin.",
+        "front_translation": "座头鲸用什么从海水中过滤食物？",
+        "back_translation": "由角蛋白构成的鲸须板。"
+    },
+    {
+        "front": "What material are baleen plates made of?",
+        "back": "Keratin—the same protein as human fingernails.",
+        "front_translation": "鲸须板由什么材料构成？",
+        "back_translation": "角蛋白——与人类指甲成分相同。"
+    },
+    {
+        "front": "How does a humpback whale separate water from food?",
+        "back": "It uses its tongue to push water out through gaps in the baleen, trapping prey inside.",
+        "front_translation": "座头鲸如何将水和食物分开？",
+        "back_translation": "用舌头将水从鲸须缝隙中挤出，把猎物留在口中。"
+    },
+    {
+        "front": "Which river carries more water than the next seven largest rivers combined?",
+        "back": "The Amazon River.",
+        "front_translation": "哪条河的水量超过接下来七条最大河流的总和？",
+        "back_translation": "亚马孙河。"
+    },
+    {
+        "front": "Why is it difficult to determine the world’s longest river?",
+        "back": "Because there’s no universal agreement on where a river’s true source begins.",
+        "front_translation": "为什么难以确定世界最长的河流？",
+        "back_translation": "因为人们对河流真正的源头没有统一标准。"
+    },
+    {
+        "front": "Which two rivers are debated as the longest in the world?",
+        "back": "The Nile and the Amazon.",
+        "front_translation": "哪两条河被争论为世界最长？",
+        "back_translation": "尼罗河和亚马孙河。"
+    },
+    {
+        "front": "Can mountain lions roar?",
+        "back": "No, they cannot roar due to differences in their larynx and hyoid bone structure.",
+        "front_translation": "美洲狮会咆哮吗？",
+        "back_translation": "不会，因其喉部和舌骨结构不同。"
+    },
+    {
+        "front": "What sounds can mountain lions make?",
+        "back": "They can purr, mew, scream, and even spit.",
+        "front_translation": "美洲狮能发出什么声音？",
+        "back_translation": "它们会呼噜、喵喵叫、尖叫，甚至吐口水。"
+    },
+    {
+        "front": "How are mountain lions vocally similar to domestic cats?",
+        "back": "They can purr but cannot roar, placing them in a different evolutionary branch.",
+        "front_translation": "美洲狮在发声上如何与家猫相似？",
+        "back_translation": "它们会呼噜但不会咆哮，属于不同的演化分支。"
+    },
+    {
+        "front": "Are skunks eager to spray their defensive odor?",
+        "back": "No, they avoid spraying because it’s metabolically costly.",
+        "front_translation": "臭鼬会轻易喷射防御性臭液吗？",
+        "back_translation": "不会，它们会避免喷射，因为这在代谢上代价很高。"
+    },
+    {
+        "front": "What warning behaviors do skunks display before spraying?",
+        "back": "They stomp their feet and may perform a handstand to raise their rear.",
+        "front_translation": "臭鼬在喷射前会发出什么警告行为？",
+        "back_translation": "跺脚，有时还会倒立抬起臀部。"
+    },
+    {
+        "front": "How long can an anteater’s tongue be?",
+        "back": "Over 1.5 feet, sometimes nearly 2 feet.",
+        "front_translation": "食蚁兽的舌头能有多长？",
+        "back_translation": "超过1.5英尺，有时接近2英尺。"
+    },
+    {
+        "front": "How does an anteater catch its prey?",
+        "back": "By rapidly darting its sticky tongue into insect nests.",
+        "front_translation": "食蚁兽如何捕捉猎物？",
+        "back_translation": "快速将黏性舌头伸入昆虫巢穴。"
+    },
+    {
+        "front": "What do koalas, stick insects, and tapirs all demonstrate?",
+        "back": "Highly specialized adaptations for survival in their environments.",
+        "front_translation": "考拉、竹节虫和貘共同展示了什么？",
+        "back_translation": "为在各自环境中生存而高度特化的适应性。"
+    },
+    {
+        "front": "What is the main function of a golden lion tamarin’s long fingers?",
+        "back": "To probe for hidden insects, frogs, and eggs in tree bark.",
+        "front_translation": "金狮狨长手指的主要功能是什么？",
+        "back_translation": "探查树皮缝隙中隐藏的昆虫、青蛙和鸟蛋。"
+    },
+    {
+        "front": "Through how many South American countries does the Amazon River flow?",
+        "back": "Six.",
+        "front_translation": "亚马孙河流经多少个南美国家？",
+        "back_translation": "六个。"
+    },
+    {
+        "front": "What makes the Amazon River the undisputed champion among rivers?",
+        "back": "Its sheer water volume, not necessarily its length.",
+        "front_translation": "是什么让亚马孙河成为河流中的无可争议冠军？",
+        "back_translation": "是其巨大的水量，而非长度。"
+    },
+    {
+        "front": "What is the core theme of this deep dive episode?",
+        "back": "The incredible diversity of nature’s specialized adaptations for solving survival challenges.",
+        "front_translation": "本期深度探索的核心主题是什么？",
+        "back_translation": "自然界为应对生存挑战而演化出的惊人多样的特化适应。"
+    }
+]

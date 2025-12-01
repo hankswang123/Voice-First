@@ -621,10 +621,12 @@ export function DesktopLayout() {
     
     if(res.flashcardsExisting === 'true'){
       //const flashcards = await getFlashcards({magzine: magzines[0]});
+      console.log("Flashcards for magzine:", magzine);
       const flashcards = await getFlashcards({magzine});
-      //console.log('Flashcards Loaded:', flashcards);
+      console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     }else {
+      console.log("No flashcards found for magzine:", magzine);
       setFlashcards([]);
     }     
     
@@ -784,10 +786,12 @@ export function DesktopLayout() {
     }    
 
     if( res.flashcardsExisting === 'true'){
+      console.log("Flashcards for magzine:", newMagzine);
       const flashcards = await getFlashcards({magzine: newMagzine});
-      //console.log('Flashcards Loaded:', flashcards);
+      console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     } else {
+      console.log("No flashcards found for magzine:", newMagzine);
       setFlashcards([]);
     }
   };  

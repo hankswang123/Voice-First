@@ -267,6 +267,8 @@ app.get("/api/audio/get", async (req, res) => {
             res.json({audioURL: `/play/${magzine}/${magzine}.wav`});
         } else if(fs.existsSync(path.join(dirPath, `${magzine}.mp3`))) {
             res.json({audioURL: `/play/${magzine}/${magzine}.mp3`});
+        } else if(fs.existsSync(path.join(dirPath, `${magzine}.m4a`))) {
+            res.json({audioURL: `/play/${magzine}/${magzine}.m4a`});
         } else {
             res.json({audioURL: `none`});
         }
