@@ -1,10 +1,13 @@
 # Voice-First
+
 Voice-First is clean version of Audio-Copilot. Only core features will be kept in Voice-First and also make Audio-Copilot not affected.
 
 # Audio Copilot
-Audio Copilot enables the interaction with content during playback on-going. It will help transform the passive listening into an interactive, engaging and real-time experience. It can understand the on-going playback intelligently and be ready for user’s query at any time. 
+
+Audio Copilot enables the interaction with content during playback on-going. It will help transform the passive listening into an interactive, engaging and real-time experience. It can understand the on-going playback intelligently and be ready for user’s query at any time.
 
 ## Features/Tests TBD
+
 - Check how to integrate some OpenAI compatiable Free Models API, e.g. zhipu realtime API
 - Logic to generate new Assistant ID when the existing assistant expires
 - Test [WebRTC API Integration](https://platform.openai.com/docs/guides/realtime-webrtc), the [openai-realtime-agents](https://github.com/openai/openai-realtime-agents) is a good example to learn, which use WebRTC to connect to realtime model
@@ -13,6 +16,7 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Test more features of different models in OpenAI
 
 ## Functions implemented
+
 - Audio Copilot. ( Key feature: Interrupt the on-going playback and ask for questions by integrating [OpenAI Realtime API](https://openai.com/index/introducing-the-realtime-api/) )
 - Chatbot integrated to ask question by typing with communicating GPT-4o by [Assistant API](https://platform.openai.com/docs/assistants/overview)
 - Control the player by voice commands. e.g. 'stop', 'resume'...
@@ -22,20 +26,23 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Search Videos by youtube.com integrated by [SERPAPI](https://serpapi.com/search-api)
 - Search News by google integrated by [SERPAPI](https://serpapi.com/search-api)
 
-## An Education Scenario which Audio Copilot could help 
+## An Education Scenario which Audio Copilot could help
+
 ### Whole process
+
 - Step 1 - Preapre the PDF file from [National Geographic Little Kids](https://magazinelib.com/?s=national+geographic+little+kids) or any other PDF files - **Mandatory**
 - Step 2 - Generate the **podcast**(Audio overview for PDF file) by uploading PDF to [NotebookLM](https://notebooklm.google.com/)
-    - Prompt example: Use very simple and interesting English words, the target audence is for grade 1 student. Tone should be supportive and encouraging. Also repeat some keywords letter by letter according to you judgement.
-- Step 3 - Generate the **Audio Scripts** by uploading podcast(audio file) to [Tongyi->Efficiency](https://tongyi.aliyun.com/efficiency)， [Fireflies](https://app.fireflies.ai/) or [Google AI Studio](https://aistudio.google.com/prompts/new_chat) - Optional
-    - Tongyi Efficiency supports editting the transribed scripts dynamically
-    - **Tongyi now support export the scripts generated** and exported scripts could be used by default without any modification
+  - Prompt example: Use very simple and interesting English words, the target audience is for grade 2 student. Tone should be supportive and encouraging. Also repeat some keywords letter by letter according to you judgement.
+- Step 3 - Generate the **Audio Scripts** by uploading podcast(audio file) to [Tongyi-&gt;Efficiency](https://tongyi.aliyun.com/efficiency)， [Fireflies](https://app.fireflies.ai/) or [Google AI Studio](https://aistudio.google.com/prompts/new_chat) - Optional
+  - Tongyi Efficiency supports editting the transribed scripts dynamically
+  - **Tongyi now support export the scripts generated** and exported scripts could be used by default without any modification
 - Step 4 - Prepare are the **Keywords** based Audio Scripts - Optional
 - Step 4 - Generate the **Flashcards content** by uploading to Tongyi - Optional
 - Step 5 - User could engage an realtime dicussion by Audio Copilot during listening podcast and reading the magzine.
 - Step 6 - Additional features: analyze selected screenshot, word card...
 
 ## API Key required
+
 - [OpenAI API Key](https://platform.openai.com/api-keys) - for Realtime API calling
 - [Recraft API Key](https://www.recraft.ai/profile/api) - for image generation
 - [SERP API Key](https://serpapi.com/manage-api-key) - for youtube video and google news search
@@ -43,8 +50,10 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 <img src="/readme/audio-copilot.png" width="800" />
 <img src="/readme/audio-copilot-2.png" width="800" />
 
-This idea is implemented based on [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console)<br>
+This idea is implemented based on [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console)`<br>`
+
 ## Issues solved
+
 - put 'fnm env --use-on-cd | Out-String | Invoke-Expression' to 'C:\Users\<YourUsername>\Documents\WindowsPowerShell\profile.ps1' to avoid run this command each time before 'npm start'
 - install 'concurrently' as dependency to start the 'server.js' and react app(react-scripts start) are started together
 - `RealtimeClient.updateSession({ modalities: ['text', 'voice'] });` will lead to other setting not working, e.g. voice, function calling

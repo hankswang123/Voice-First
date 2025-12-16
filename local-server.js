@@ -306,6 +306,7 @@ app.get("/api/audio/check", async (req, res) => {
         else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )){ 
             res.json({audioExisting: 'true', scriptExisting: 'false', keywordsExisting: 'false', flashcardsExisting: 'false'});                        
         } else{res.json({audioExisting: 'false'});}
+        
 
     } catch(error) {
         console.error('Error checking audio file:', error);

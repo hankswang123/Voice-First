@@ -216,7 +216,8 @@ export function DesktopLayout() {
   const selectionRef = useRef(null);
   const containerRefs = useRef({}); // 用于存储每个页面对的容器引用
 
-  const [chatModel, setChatModel] = useState('gpt-realtime');  
+  //const [chatModel, setChatModel] = useState('gpt-realtime');  
+  const [chatModel, setChatModel] = useState('gpt-realtime-mini-2025-12-15');  
   const chatModelRef = useRef(chatModel);  
   
   interface FlashcardItem { front: string; back: string; }
@@ -445,7 +446,9 @@ export function DesktopLayout() {
               const client = clientRef.current;
               if(client.isConnected()){
 
-                if(chatModelRef.current === 'gpt-realtime'){
+                if(chatModelRef.current === 'gpt-realtime' ||
+                   chatModelRef.current === 'gpt-realtime-mini-2025-12-15'
+                ){
                   client.sendUserMessageContent([
                     {
                       type: `input_image`,
@@ -681,7 +684,8 @@ export function DesktopLayout() {
       if(newModel === 'GPT-Realtime'){
         setChatModel('gpt-realtime');
       }else{
-        setChatModel('gpt-4o-mini-realtime-preview-2024-12-17');
+        //setChatModel('gpt-4o-mini-realtime-preview-2024-12-17');
+        setChatModel('gpt-realtime-mini-2025-12-15');
       }      
 
       disConnnectRealtimeAPI();
