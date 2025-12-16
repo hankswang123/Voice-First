@@ -216,8 +216,8 @@ export function DesktopLayout() {
   const selectionRef = useRef(null);
   const containerRefs = useRef({}); // 用于存储每个页面对的容器引用
 
-  //const [chatModel, setChatModel] = useState('gpt-realtime');  
-  const [chatModel, setChatModel] = useState('gpt-realtime-mini-2025-12-15');  
+  const [chatModel, setChatModel] = useState('gpt-realtime');  
+  //const [chatModel, setChatModel] = useState('gpt-realtime-mini-2025-12-15');  
   const chatModelRef = useRef(chatModel);  
   
   interface FlashcardItem { front: string; back: string; }
