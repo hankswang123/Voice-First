@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@hankswang123/realtime-api-beta": "github:hankswang123/openai-realtime-api-beta#cdd17efcd84e2f9823711b88c44c29d339883a2e",
+    "@hankswang123/realtime-api-beta": "github:hankswang123/openai-realtime-api-beta#9f3d5b60bc0326d4293d88cf4d84a3aa8cda05ef",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
