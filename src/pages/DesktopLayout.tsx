@@ -585,10 +585,11 @@ export function DesktopLayout() {
       {
         setIsScriptExisting(true);
 
-        const instructions = await buildInstructions();
+        const instructions = await buildInstructions({magzine});
         setNewInstructions(instructions);   
 
-        const captions = await transformAudioScripts();
+        console.log('The Magzine name is:', magzine);
+        const captions = await transformAudioScripts({magzine});
         setNewAudioCaptions(captions); 
 
         if( res.keywordsExisting === 'true' )
@@ -744,6 +745,7 @@ export function DesktopLayout() {
       {      
         setIsScriptExisting(true);
 
+        console.log('The Magzine name is:', newMagzine);
         setNewAudioCaptions( await transformAudioScripts({magzine: newMagzine}) );
     
         const newInstructions = await buildInstructions({magzine: newMagzine});
