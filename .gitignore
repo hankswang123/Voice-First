@@ -141,3 +141,10 @@ vite.config.ts.timestamp-*
 *.mp3
 *.pdf
 *.txt
+
+# Database files (auto-created at runtime)
+*.db
+data/
+
+# Production build output
+build/

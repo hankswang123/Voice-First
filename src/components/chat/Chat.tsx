@@ -10,9 +10,10 @@ import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
 import { RealtimeClient } from '@hankswang123/realtime-api-beta';
 
 import { Button } from '../button/Button';
-import { Mic, MicOff, Send } from 'react-feather';
+import { Mic, MicOff, Send, Trash2 } from 'react-feather';
 
 import { detectDevice } from '../../utils/detectDevice';
+import { useChatHistory } from '../../hooks/useChatHistory';
 
 
 let apiKey = localStorage.getItem('tmp::voice_api_key');
@@ -204,29 +205,35 @@ const AudioMessage = ({ itemId, items }: { itemId: string; items: ItemType[] }) 
   const tempItem = items.find((conversationItem) => conversationItem.id === itemId);
 
   // Check if tempItem exists before accessing its properties
-  const role = tempItem?.role;
+  if (!tempItem) {
+    return null;  // Item not found, skip rendering
+  }
+
+  const role = tempItem.role;
   const alignSelf = role === 'user' ? 'flex-end' : 'flex-start';
+
+  // Get display text - prefer transcript, then text, then fallback
+  const getDisplayText = () => {
+    if (tempItem.formatted?.transcript) return tempItem.formatted.transcript;
+    if (tempItem.formatted?.text) return tempItem.formatted.text;
+    if (tempItem.formatted?.audio?.length) return '(awaiting transcript)';
+    return '(audio message)';
+  };
 
   switch (role) {
     case "user":
       return <> {/*Transcription for user audio or text only*/}
-                <UserMessage text={tempItem.formatted.transcript ||
-                                (tempItem.formatted.audio?.length
-                                  ? '(awaiting transcript)'
-                                  : tempItem.formatted.text || '(item sent)')} 
-                />
+                <UserMessage text={getDisplayText()} />
                 <OriginalAudio align={alignSelf} itemId={itemId} items={items} />
-             </>    
+             </>
     case "assistant":
       return <> {/*Transcription for system response audio*/}
-                <AssistantMessage text={tempItem.formatted.transcript ||
-                                    tempItem.formatted.text || '(truncated)'} 
-                />
+                <AssistantMessage text={getDisplayText()} />
                 <OriginalAudio align={alignSelf} itemId={itemId} items={items} />
-            </>  
+            </>
     default:
       return null;
-  }      
+  }
 
 };
 
@@ -266,15 +273,16 @@ type ChatProps = {
   ) => Promise<string>;
   realtimeClient?: RealtimeClient;
   getIsMuted?: () => boolean;
+  magazine?: string;  // For chat history persistence
 };
 
-const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getIsMuted, realtimeClient }: ChatProps, ref) => {
+const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getIsMuted, realtimeClient, magazine }: ChatProps, ref) => {
   const [userInput, setUserInput] = useState("");
   //new codes by copilot
   const [messages, setMessages] = useState<{ role: "user" | "assistant" | "code" | "audio" | "read_aloud"; text: string }[]>([]);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
-  const threadIdRef = useRef<string | null>(null); 
+  const threadIdRef = useRef<string | null>(null);
   const [items, setItems] = useState<ItemType[]>([]);
   //const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chatModel, setChatModel] = useState("GPT-Realtime");
@@ -284,11 +292,46 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
 
   const messagesContainerRef = useRef<HTMLDivElement|null>(null);
   const inputFormRef = useRef<HTMLFormElement|null>(null);
-  const firstScrollDoneRef = useRef(false);  
+  const firstScrollDoneRef = useRef(false);
 
   const textareaRef = useRef<HTMLTextAreaElement|null>(null);
 
-  const baseLineHeightRef = useRef<number | null>(null);  
+  const baseLineHeightRef = useRef<number | null>(null);
+
+  // Chat history persistence
+  const {
+    sessionId,
+    isLoading: isHistoryLoading,
+    savedMessages,
+    savedItems,
+    saveMessage: persistMessage,
+    saveItem: persistItem,
+    clearHistory
+  } = useChatHistory({ magazine: magazine || 'default' });
+
+  // Track previous magazine to detect changes
+  const prevMagazineRef = useRef(magazine);
+
+  // Load saved history when magazine changes or history finishes loading
+  useEffect(() => {
+    // Check if magazine changed
+    if (prevMagazineRef.current !== magazine) {
+      prevMagazineRef.current = magazine;
+      // Clear current state when magazine changes - new data will load via the hook
+      setMessages([]);
+      setItems([]);
+      return;
+    }
+
+    // Load history when not loading and we have data
+    if (!isHistoryLoading && (savedMessages.length > 0 || savedItems.length > 0)) {
+      setMessages(savedMessages.map(m => ({
+        role: m.role as "user" | "assistant" | "code" | "audio" | "read_aloud",
+        text: m.text
+      })));
+      setItems(savedItems);
+    }
+  }, [isHistoryLoading, savedMessages, savedItems, magazine]);  
 
   function handleTextareaFocus() {
     const ta = textareaRef.current;
@@ -409,18 +452,56 @@ useEffect(() => {
       setItems((prevItems) => {
         // Create a Set of IDs for quick lookup of existing items
         const existingIds = new Set(prevItems.map((item) => item.id));
-    
+
         // Filter newItems to include only those that are not already in the state
         const filteredNewItems = newItems.filter((item) => !existingIds.has(item.id));
-    
+
         // Return the updated state by appending the filtered new items
         return [...prevItems, ...filteredNewItems];
-      });      
+      });
+
+      // Persist items to database - save all items that have transcript, completed status, or audio
+      // This handles both new items and updates to existing items with transcripts
+      newItems.forEach((item) => {
+        const hasTranscript = item.formatted?.transcript && item.formatted.transcript.length > 0;
+        const hasText = item.formatted?.text && item.formatted.text.length > 0;
+        const isCompleted = (item as any).status === 'completed';
+        const hasAudio = item.formatted?.audio && item.formatted.audio.length > 0;
+        const hasFile = !!item.formatted?.file?.url;
+
+        // Debug logging
+        console.log('[Chat] updateItems checking item:', {
+          id: item.id,
+          role: item.role,
+          status: (item as any).status,
+          hasTranscript,
+          hasText,
+          hasAudio,
+          hasFile
+        });
+
+        // Save if item has content worth saving
+        // For audio items, only save when completed AND have file URL (so audio can be played back)
+        // This ensures the WAV file has been created from the audio data before saving
+        const shouldSaveAudio = hasAudio && hasFile && isCompleted;
+        const shouldSaveText = hasTranscript || hasText;
+
+        if (shouldSaveText || shouldSaveAudio) {
+          persistItem(item);
+        }
+      });
     },
 
     updateItemID(updateItemID) {
       appendMessage("audio", updateItemID);
-    },    
+    },
+
+    // Clear chat history
+    clearChatHistory: async () => {
+      await clearHistory();
+      setMessages([]);
+      setItems([]);
+    },
 
     explainSelection(userInput) {     
       sendMessage(userInput);
@@ -758,6 +839,8 @@ useEffect(() => {
 //changed by copilot
   const appendMessage = (role: "user" | "assistant" | "code" | "audio" | "read_aloud", text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
+    // Persist message to database
+    persistMessage(role, text);
   };
 
   const annotateLastMessage = (annotations) => {
@@ -801,6 +884,7 @@ useEffect(() => {
   const [inputOverflow, setInputOverflow] = useState(false); // <== NEW
   // 1. Add state + effect (minimal TSX change)
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
+  const [inputFormHeight, setInputFormHeight] = useState(45); // Track input form height for clear button position
 
   useLayoutEffect(() => {
     const el = messagesContainerRef.current;
@@ -809,7 +893,22 @@ useEffect(() => {
     const hasVerticalScroll = el.scrollHeight > el.clientHeight;
     const sbw = hasVerticalScroll ? (el.offsetWidth - el.clientWidth) : 0;
     if (sbw !== scrollbarWidth) setScrollbarWidth(sbw);
-  }, [messages, items, scrollbarWidth]);  
+  }, [messages, items, scrollbarWidth]);
+
+  // Track input form height changes
+  useLayoutEffect(() => {
+    const form = inputFormRef.current;
+    if (!form) return;
+    const updateHeight = () => {
+      const height = form.offsetHeight;
+      if (height !== inputFormHeight) setInputFormHeight(height);
+    };
+    updateHeight();
+    // Use ResizeObserver to track height changes
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(form);
+    return () => observer.disconnect();
+  }, [inputFormHeight]);  
 
   return (
     <div 
@@ -877,7 +976,7 @@ useEffect(() => {
           //disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  */}
           <div className={styles.inputActions}
-          
+
           /*
               style={{
                 position: 'static',          // override absolute from CSS
@@ -889,8 +988,37 @@ useEffect(() => {
                 gap: '8px',
                 transform: 'none',           // neutralize translateY
                 paddingTop: 0
-              }}    */      
+              }}    */
           >
+            {/* Clear chat history button - positioned above the Mic button */}
+            <div
+              title="Clear chat history"
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to clear all chat history for this magazine?')) {
+                  await clearHistory();
+                  setMessages([]);
+                  setItems([]);
+                }
+              }}
+              style={{
+                position: 'absolute',
+                bottom: `${inputFormHeight + 5}px`,
+                right: '5px',
+                cursor: 'pointer',
+                opacity: 0.5,
+                transition: 'opacity 0.2s ease-in-out, bottom 0.15s ease-in-out',
+                padding: '4px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.5'; }}
+            >
+              <Trash2 style={{ width: '18px', height: '18px', color: '#666' }} />
+            </div>
             <Button
               title={realtimeClient.isConnected() ? "" : "Connect to talk"}
               type="submit"
@@ -898,7 +1026,7 @@ useEffect(() => {
               disabled={realtimeClient.isConnected() ? false : true}
               label={''}
               iconPosition={'end'}
-              icon={ getIsMuted() ? MicOff : Mic}          
+              icon={ getIsMuted() ? MicOff : Mic}
               style={{fontSize: 'medium', marginLeft: '1px', marginRight: '1px', display: userInput.trim() === '' ? 'flex' :'none' }}
 
               //style={{ display: userInput.trim() === '' ? 'flex' : 'none' }}

@@ -14,10 +14,24 @@ import { ZhipuAI } from 'zhipuai';
 import jwt from 'jsonwebtoken';
 import WebSocket from "ws";
 import { RealtimeRelay } from './relay-server/lib/relay.js';
+import multer from 'multer';
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Chat history database (optional - may fail on some platforms)
+let chatDb = null;
+let dbAvailable = false;
+
+try {
+  chatDb = await import('./db/chatHistory.js');
+  dbAvailable = true;
+  console.log('Chat history database loaded successfully');
+} catch (error) {
+  console.warn('Chat history database not available:', error.message);
+  console.warn('Chat history features will be disabled');
+}
 
 //Get the directory name
 const __filename = fileURLToPath(import.meta.url);
@@ -41,7 +55,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));  // Increased limit for audio data in base64
 
 // Dynamic magazines (folder names under public/play)
 app.get("/api/magazines", (req, res) => {
@@ -57,6 +71,107 @@ app.get("/api/magazines", (req, res) => {
     console.error('Failed to list magazines:', e);
     res.status(500).json({ error: 'Failed to list magazines' });
   }
+});
+
+// ==================== MAGAZINE UPLOAD ENDPOINT ====================
+
+// Helper function to get unique directory name with suffix
+const getUniqueDirName = (basePath, baseName) => {
+  let dirName = baseName;
+  let counter = 1;
+  let fullPath = path.join(basePath, dirName);
+
+  while (fs.existsSync(fullPath)) {
+    dirName = `${baseName}_${counter}`;
+    fullPath = path.join(basePath, dirName);
+    counter++;
+  }
+
+  return dirName;
+};
+
+// Configure multer for magazine PDF uploads
+const magazineStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const playDir = path.join(process.cwd(), 'public', 'play');
+    // Store temporarily in play dir, will be moved to final folder after filename is determined
+    cb(null, playDir);
+  },
+  filename: (req, file, cb) => {
+    // Use original filename temporarily
+    cb(null, `temp_${Date.now()}_${file.originalname}`);
+  }
+});
+
+// File filter - PDF only
+const magazineFileFilter = (req, file, cb) => {
+  const isPdf = file.mimetype === 'application/pdf' ||
+                file.originalname.toLowerCase().endsWith('.pdf');
+  if (isPdf) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF files are allowed'), false);
+  }
+};
+
+const magazineUpload = multer({
+  storage: magazineStorage,
+  fileFilter: magazineFileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
+
+// Upload magazine PDF endpoint
+app.post('/api/upload-magazine', magazineUpload.single('magazine'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const playDir = path.join(process.cwd(), 'public', 'play');
+    const originalName = req.file.originalname;
+    const baseName = path.parse(originalName).name; // Remove .pdf extension
+    const tempFilePath = req.file.path;
+
+    // Get unique directory name (adds suffix if exists)
+    const uniqueDirName = getUniqueDirName(playDir, baseName);
+    const targetDir = path.join(playDir, uniqueDirName);
+    const targetFilePath = path.join(targetDir, `${uniqueDirName}.pdf`);
+
+    // Create the directory
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    // Move the temp file to the target directory with proper name
+    fs.renameSync(tempFilePath, targetFilePath);
+
+    console.log(`Magazine uploaded successfully: ${uniqueDirName}`);
+
+    res.json({
+      success: true,
+      magazineName: uniqueDirName,
+      message: `Magazine "${uniqueDirName}" uploaded successfully`
+    });
+
+  } catch (error) {
+    // Clean up temp file if it exists
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    console.error('Error uploading magazine:', error);
+    res.status(500).json({ error: 'Failed to upload magazine', details: error.message });
+  }
+});
+
+// Error handling middleware for multer errors
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File size exceeds 100MB limit' });
+    }
+    return res.status(400).json({ error: err.message });
+  } else if (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  next();
 });
 
 // Call SERPAPI API to fetch news articles from google news
@@ -615,11 +730,154 @@ app.get("/api/zhipu/rt", async (req, res) => {
     ws.on("open", function open() {
       console.log("Connected to server.");
     });
-    
+
     ws.on("message", function incoming(message) {
       console.log(message);
-    });  
-  });   
+    });
+  });
+
+// ==================== CHAT HISTORY API ENDPOINTS ====================
+
+// Helper to check if database is available
+const requireDb = (res) => {
+  if (!dbAvailable || !chatDb) {
+    res.status(503).json({
+      error: 'Chat history database not available',
+      message: 'This feature requires better-sqlite3 which may not be supported on this platform'
+    });
+    return false;
+  }
+  return true;
+};
+
+// List all sessions (optional ?magazine= filter)
+app.get("/api/chat/sessions", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { magazine } = req.query;
+    const sessions = chatDb.listSessions(magazine || null);
+    res.json({ sessions });
+  } catch (error) {
+    console.error("Error listing sessions:", error);
+    res.status(500).json({ error: 'Failed to list sessions', details: error.message });
+  }
+});
+
+// Get or create active session for a magazine
+app.get("/api/chat/sessions/:magazine", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { magazine } = req.params;
+    const session = chatDb.getOrCreateSession(magazine);
+    res.json(session);
+  } catch (error) {
+    console.error("Error getting/creating session:", error);
+    res.status(500).json({ error: 'Failed to get/create session', details: error.message });
+  }
+});
+
+// Delete a session
+app.delete("/api/chat/sessions/:sessionId", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    chatDb.deleteSession(sessionId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    res.status(500).json({ error: 'Failed to delete session', details: error.message });
+  }
+});
+
+// Clear session history (but keep session)
+app.post("/api/chat/sessions/:sessionId/clear", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    chatDb.clearSession(sessionId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error clearing session:", error);
+    res.status(500).json({ error: 'Failed to clear session', details: error.message });
+  }
+});
+
+// Get all messages for a session
+app.get("/api/chat/sessions/:sessionId/messages", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    const messages = chatDb.getMessages(sessionId);
+    res.json({ messages });
+  } catch (error) {
+    console.error("Error getting messages:", error);
+    res.status(500).json({ error: 'Failed to get messages', details: error.message });
+  }
+});
+
+// Add a message to a session
+app.post("/api/chat/sessions/:sessionId/messages", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    const { role, text } = req.body;
+
+    if (!role || text === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: role and text' });
+    }
+
+    const message = chatDb.addMessage(sessionId, role, text);
+    res.json(message);
+  } catch (error) {
+    console.error("Error adding message:", error);
+    res.status(500).json({ error: 'Failed to add message', details: error.message });
+  }
+});
+
+// Get all items for a session
+app.get("/api/chat/sessions/:sessionId/items", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    const items = chatDb.getItems(sessionId);
+    res.json({ items });
+  } catch (error) {
+    console.error("Error getting items:", error);
+    res.status(500).json({ error: 'Failed to get items', details: error.message });
+  }
+});
+
+// Add an item to a session
+app.post("/api/chat/sessions/:sessionId/items", (req, res) => {
+  if (!requireDb(res)) return;
+  try {
+    const { sessionId } = req.params;
+    const item = req.body;
+
+    if (!item.id) {
+      return res.status(400).json({ error: 'Missing required field: id' });
+    }
+
+    // Debug logging - see what data arrives at server
+    console.log('[ChatHistory Server] Received item:', {
+      id: item.id,
+      role: item.role,
+      status: item.status,
+      hasAudio: !!item.formattedAudio,
+      audioLength: item.formattedAudio?.length || 0,
+      hasFileData: !!item.formattedFileData,
+      fileDataLength: item.formattedFileData?.length || 0,
+      hasTranscript: !!item.formattedTranscript,
+      transcript: item.formattedTranscript?.substring(0, 30)
+    });
+
+    const savedItem = chatDb.addItem(sessionId, item);
+    res.json(savedItem);
+  } catch (error) {
+    console.error("Error adding item:", error);
+    res.status(500).json({ error: 'Failed to add item', details: error.message });
+  }
+});
 
 // SPA fallback (Express 5 safe): only handle GET navigation requests not starting with /api
 app.use((req, res, next) => {

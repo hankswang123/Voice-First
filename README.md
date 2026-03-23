@@ -14,6 +14,13 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Model settings, e.g. voice to be used, before launching a conversation
 - Launch two realtime api instants to talk with each other to implment the NotebookLM audio overview effect
 - Test more features of different models in OpenAI
+- PDF Loading Performance Improvements (for large files 10MB+):
+  - Lazy loading / pagination: Only load pages user is viewing
+  - PDF compression: Compress PDFs before adding to project
+  - Caching headers: Add `maxAge` for static PDF files to avoid re-download
+  - Loading progress indicator: Show progress while PDF loads
+  - Convert PDF to images: Pre-convert pages to optimized JPEG/WebP
+  - CDN for static assets: Host large PDFs on Cloudflare/AWS CloudFront
 
 ## Functions implemented
 
@@ -25,6 +32,7 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Screenshot analyzation and read aloud by Realtime API
 - Search Videos by youtube.com integrated by [SERPAPI](https://serpapi.com/search-api)
 - Search News by google integrated by [SERPAPI](https://serpapi.com/search-api)
+- tbd: chat history should be saved for later reference
 
 ## An Education Scenario which Audio Copilot could help
 
@@ -50,7 +58,7 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 <img src="/readme/audio-copilot.png" width="800" />
 <img src="/readme/audio-copilot-2.png" width="800" />
 
-This idea is implemented based on [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console)`<br>`
+This idea is implemented based on [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console) `<br>`
 
 ## Issues solved
 

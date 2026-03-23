@@ -29,11 +29,11 @@ import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume } from 'react-feather';
+import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload } from 'react-feather';
 
 import './style/TabletLayout.scss';
 
-import { magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
+import { fetchMagzinesDynamic, magzines, fetchKeywords, transformAudioScripts, buildInstructions, genKeywords, tts_voice, getFlashcards } from '../utils/app_util.js';
 import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
@@ -45,6 +45,8 @@ import './style/react-pdf/AnnotationLayer.css';
 import './style/react-pdf/TextLayer.css';
 import { Document, Page } from 'react-pdf';
 import html2canvas from 'html2canvas';
+import { usePdfLazyLoading } from '../hooks/usePdfLazyLoading';
+import { PageSkeleton } from '../components/pdf/PageSkeleton';
 
 /**
  * Type for all event logs
@@ -156,18 +158,39 @@ export function TabletLayout() {
   const rightRef = useRef<HTMLDivElement | null>(null);
 
   const [numPages, setNumPages] = useState<number>();
-  const containerRef = useRef(null); // Ref for the scrollable container
+  const containerRef = useRef<HTMLDivElement>(null); // Ref for the scrollable container
   const pageRefs = useRef<React.RefObject<HTMLDivElement>[]>([]); // Array of refs for each page
   const [scale, setScale] = useState(1); // Zoom level
-  const [renderedPages, setRenderedPages] = useState([1]); // Track pages rendered in the DOM
+  // renderedPages state removed - now managed by usePdfLazyLoading hook
   const [isTwoPageView, setIsTwoPageView] = useState(true); // Track two-page view mode
+
+  // PDF lazy loading hook
+  const {
+    pagesToRender,
+    shouldRenderPage,
+    ensurePageLoaded,
+    onPageRenderSuccess,
+    registerPageRef,
+    getPagePairsToRender
+  } = usePdfLazyLoading({
+    numPages,
+    bufferSize: 3,
+    isTwoPageView,
+    scrollContainerRef: containerRef
+  });
 
   const timeUpdateHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const [isLoop, setIsLoop] = useState(false);
 
   // Use absolute path for PDF so production build (served from /) resolves correctly.
-  const [pdfFilePath1, setpdfFilePath1] = useState(`/play/${magzines[0]}/${magzines[0]}.pdf`);
+  const [dynamicMagzines, setDynamicMagzines] = useState<string[]>([]);
+  const [magazinesLoading, setMagazinesLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pdfFilePath1, setpdfFilePath1] = useState('');
   // Debug: preflight HEAD request to surface any 404 early (removed in production when stable)
   useEffect(() => {
     if (!pdfFilePath1) return;
@@ -180,20 +203,42 @@ export function TabletLayout() {
       }
     })();
   }, [pdfFilePath1]);
-  const [audioFilePath1, setaudioFilePath1] = useState(`./play/${magzines[0]}/${magzines[0]}.wav`);
+
+  /* dynamic detect magazine resources */
+  useEffect(() => {
+    (async () => {
+      const list = await fetchMagzinesDynamic();
+      console.log('Magzines Loaded:', list);
+      setDynamicMagzines(list);
+      setMagazinesLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!dynamicMagzines.length) return;
+    const first = dynamicMagzines[0];
+    setNewMagzine(first.replace(/[_-]/g, ' '));
+    setCurrentMagazineId(first);
+    console.log('First Magzine:', first);
+    setpdfFilePath1(`/play/${first}/${first}.pdf`);
+    setaudioFilePath1(`/play/${first}/${first}.wav`);
+  }, [dynamicMagzines]);
+
+  const [audioFilePath1, setaudioFilePath1] = useState('');
   const [isAudioExisting, setIsAudioExisting] = useState(false);
   const [isScriptExisting, setIsScriptExisting] = useState(false);
-  
+
   const [newAudioCaptions, setNewAudioCaptions] = useState([]);
   const audioCaptions = useRef(newAudioCaptions);
 
   const [newKeywords, setNewKeywords] = useState({});
-  const Keywords = useRef(newKeywords);  
+  const Keywords = useRef(newKeywords);
 
   const [newInstructions, setNewInstructions] = useState('');
-  const instructions = useRef(newInstructions);   
+  const instructions = useRef(newInstructions);
 
-  const [newMagzine, setNewMagzine] = useState(`${magzines[0].replace(/[_-]/g, " ")}`);
+  const [newMagzine, setNewMagzine] = useState('');
+  const [currentMagazineId, setCurrentMagazineId] = useState('');  // For chat history persistence
 
   const [isSelecting, setIsSelecting] = useState(false);
   const selectionStart = useRef({ x: 0, y: 0 });
@@ -242,16 +287,16 @@ export function TabletLayout() {
     );
   };
 
-  // Ensure each page has a RefObject  
+  // Ensure each page has a RefObject (now based on pagesToRender from lazy loading)
   useEffect(() => {
-    if (pageRefs.current.length < renderedPages.length) {
-      renderedPages.forEach((_, index) => {
+    if (pageRefs.current.length < pagesToRender.length) {
+      pagesToRender.forEach((_, index) => {
         if (!pageRefs.current[index]) {
           pageRefs.current[index] = React.createRef<HTMLDivElement>();
         }
       });
     }
-  }, [renderedPages])  
+  }, [pagesToRender])  
 
   // Screenshot Menu Popup after selection Mouseup
   const showScreenshotMenu = (box) => {
@@ -616,6 +661,7 @@ export function TabletLayout() {
     const newMagzine = event.target.value;
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
+    setCurrentMagazineId(newMagzine);  // Set for chat history
 
     // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
     setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
@@ -694,6 +740,98 @@ export function TabletLayout() {
     } else {
       setFlashcards([]);
     }
+  };
+
+  // Handle magazine PDF upload
+  const handleMagazineUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Reset states
+    setUploadError('');
+    setUploadProgress(0);
+
+    // Client-side validation: file type
+    if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError('Only PDF files are allowed');
+      return;
+    }
+
+    // Client-side validation: file size (100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError('File size exceeds 100MB limit');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('magazine', file);
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(percent);
+        }
+      });
+
+      // Handle completion
+      xhr.addEventListener('load', async () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          console.log('Upload successful:', response);
+
+          // Refresh magazine list
+          const list = await fetchMagzinesDynamic();
+          setDynamicMagzines(list);
+
+          // Auto-select the newly uploaded magazine
+          const newMagazineName = response.magazineName;
+          if (newMagazineName && list.includes(newMagazineName)) {
+            // Update the dropdown selection
+            const selectElement = document.getElementById('Magzine') as HTMLSelectElement;
+            if (selectElement) {
+              selectElement.value = newMagazineName;
+              // Trigger the change event to update the view
+              const changeEvent = new Event('change', { bubbles: true });
+              selectElement.dispatchEvent(changeEvent);
+            }
+          }
+
+          setUploadProgress(100);
+          setTimeout(() => {
+            setIsUploading(false);
+            setUploadProgress(0);
+          }, 1000);
+        } else {
+          const errorResponse = JSON.parse(xhr.responseText);
+          setUploadError(errorResponse.error || 'Upload failed');
+          setIsUploading(false);
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        setUploadError('Network error during upload');
+        setIsUploading(false);
+      });
+
+      xhr.open('POST', '/api/upload-magazine');
+      xhr.send(formData);
+
+    } catch (error: any) {
+      setUploadError(error.message || 'Upload failed');
+      setIsUploading(false);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };  
 
   // Some times isConnected could not reflect the actual connection status due to the delay of the state update
@@ -736,7 +874,17 @@ export function TabletLayout() {
     pageNumber: number;
   }
 
-  const goToPage = ({ pageNumber }: GoToPageProps): void => {
+  const goToPage = async ({ pageNumber }: GoToPageProps): Promise<void> => {
+    // Ensure the page is loaded before scrolling (lazy loading support)
+    try {
+      await ensurePageLoaded(pageNumber);
+    } catch (err) {
+      console.warn(`Failed to ensure page ${pageNumber} is loaded:`, err);
+    }
+
+    // Small delay to allow DOM to update after page renders
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     if (pageRefs.current[pageNumber]){
       // Scroll the specific page into view
       pageRefs.current[pageNumber].current?.scrollIntoView({
@@ -744,7 +892,7 @@ export function TabletLayout() {
         block: 'start', // Align the top of the page with the container
       });
     } else {
-      alert(`Page ${pageNumber} is out of range!`);
+      console.warn(`Page ${pageNumber} ref not available yet`);
     }
   };
 
@@ -762,65 +910,13 @@ export function TabletLayout() {
 
   const onPageLoadSuccess = ({ pageNumber }: OnPageLoadSuccessProps): void => {
     console.log(`Page ${pageNumber} loaded successfully.`);
-
-    // Add the next page to the DOM
-    /* Previous Logic
-    setRenderedPages((prev) => {
-      const nextPage = Math.min(pageNumber + 1, numPages || 0);
-      return prev.includes(nextPage) ? prev : [...prev, nextPage];
-    });    */
-
-    // 在双页视图模式下，一次加载两页
-    setRenderedPages((prev) => {
-      const nextPages = [...prev];
-      
-      if (isTwoPageView) {
-        // 如果是第一页，加载第2页和第3页
-        if (pageNumber === 1) {
-          if (!prev.includes(2)) nextPages.push(2);
-          if (!prev.includes(3)) nextPages.push(3);
-        } else {
-          // 其他情况，加载后续两页
-          const nextPage1 = Math.min(pageNumber + 2, numPages || 0);
-          const nextPage2 = Math.min(pageNumber + 3, numPages || 0);
-          
-          if (!prev.includes(nextPage1)) nextPages.push(nextPage1);
-          if (!prev.includes(nextPage2)) nextPages.push(nextPage2);
-        }
-      } else {
-        // 单页视图模式
-        const nextPage = Math.min(pageNumber + 1, numPages || 0);
-        if (!prev.includes(nextPage)) nextPages.push(nextPage);
-      }
-      
-      return nextPages;
-    });  
+    // Notify lazy loading hook that page has rendered
+    onPageRenderSuccess(pageNumber);
   };
 
-  // 将页面分组为双页显示
-  const getPagePairs = (pages: number[]) => {
-    if (!isTwoPageView) {
-      return pages.map(page => [page]);
-    }
+  // getPagePairs function removed - now using getPagePairsToRender from usePdfLazyLoading hook
 
-    const pairs: number[][] = [];
-    // 第一页单独显示
-    if (pages.includes(1)) {
-      pairs.push([1]);
-      pages = pages.filter(p => p !== 1);
-    }
-    
-    // 其余页面两两分组
-    for (let i = 0; i < pages.length; i += 2) {
-      pairs.push([
-        pages[i],
-        i + 1 < pages.length ? pages[i + 1] : null
-      ].filter(Boolean) as number[]);
-    }
-    return pairs;
-  };  
-
-  // Handle zooming of the PDF when the user clicks the '+' button  
+  // Handle zooming of the PDF when the user clicks the '+' button
   const togglePageView = () => {
     setIsTwoPageView(!isTwoPageView);
   };  
@@ -2872,26 +2968,31 @@ export function TabletLayout() {
       // hanks - Resume audio when item is 'completed'
       wavStreamPlayer.setItemStatus(item.status);
       wavStreamPlayer.isHidden = isHidden;
-      // hanks 
+      // hanks
 
-      const items = client.conversation.getItems();
       if (delta?.audio) {
         wavStreamPlayer.add16BitPCM(delta.audio, item.id);
       }
+
+      // When item is completed with audio, decode to WAV file first
+      // Then get fresh items so the file URL is included for chat history persistence
       if (item.status === 'completed' && item.formatted.audio?.length) {
         const wavFile = await WavRecorder.decode(
           item.formatted.audio,
           24000,
           24000
         );
-        item.formatted.file = wavFile;        
+        item.formatted.file = wavFile;
+        // Get fresh items AFTER assigning the file so chat history saves complete audio
+        const updatedItems = client.conversation.getItems();
+        setItems(updatedItems);
+        await chatRef.current.updateItems(updatedItems);
+      } else {
+        // For non-completed items or items without audio, update normally
+        const items = client.conversation.getItems();
+        setItems(items);
+        await chatRef.current.updateItems(items);
       }
-      setItems(items);
-
-      // Pass the latest items to the chat component
-      // This will trigger a re-render of the chat component,e.g transcript will be updated
-      // audio stream will be decoded and replayed in the chat lis
-      await chatRef.current.updateItems(items);
     });
     client.on('conversation.item.completed', ({ item }) => {
       if (item.type === 'function_call') {
@@ -3337,8 +3438,8 @@ export function TabletLayout() {
               onSourceSuccess={(...args) => { console.log('[PDF] source success', ...args); }}
               onSourceError={(err) => { console.error('[PDF] source error', err); }}
             >
-              {/* Page Rendering */}
-              {getPagePairs(renderedPages).map((pagePair, index) => {
+              {/* Page Rendering with Lazy Loading */}
+              {numPages && getPagePairsToRender().map((pagePair, index) => {
                   // 确保 ref 存在
                   if (!containerRefs.current[`pair_${index}`]) {
                     containerRefs.current[`pair_${index}`] = React.createRef();
@@ -3347,7 +3448,7 @@ export function TabletLayout() {
                   return (
                     <div
                       ref={containerRefs.current[`pair_${index}`]}
-                      key={`pair_${index}`}
+                      key={`pair_${pagePair[0]}`}
                       style={{
                         display: 'flex',
                         justifyContent: 'center',
@@ -3360,33 +3461,33 @@ export function TabletLayout() {
 
                       onMouseDown={(e) => {
 
-                        if(!e.ctrlKey) { 
+                        if(!e.ctrlKey) {
                           setSelectionBox({ x: 0, y: 0, width: 0, height: 0, pairIndex: 0 });
                           return;
-                        }else { 
+                        }else {
                           //if(!isConnected){connnectRealtimeAPI();return;}
                           document.body.style.userSelect = 'none'; // Prevent text selection
                         }
 
                         //document.body.style.userSelect = 'none'; // Prevent text selection
                         //const rect = e.currentTarget.getBoundingClientRect();
-                        selectionStart.current = { 
-                          x: e.clientX, 
-                          y: e.clientY 
+                        selectionStart.current = {
+                          x: e.clientX,
+                          y: e.clientY
                         };
                         setIsSelecting(true);
-                        setSelectionBox({ 
+                        setSelectionBox({
                           x: e.clientX,
                           y: e.clientY,
-                          width: 0, 
+                          width: 0,
                           height: 0,
-                          pairIndex: index 
+                          pairIndex: index
                         });
                       }}
 
                       onMouseMove={(e) => {
                         if (!isSelecting) return;
-                        
+
                         setSelectionBox(prev => ({
                           ...prev,
                           x: Math.min(e.clientX, selectionStart.current.x),
@@ -3398,9 +3499,9 @@ export function TabletLayout() {
 
                       onMouseUp={(e) => {
                         setIsSelecting(false);
-                        if(!e.ctrlKey) { 
+                        if(!e.ctrlKey) {
                           return;
-                        }else { 
+                        }else {
                           document.body.style.userSelect = 'auto'; // Prevent text selection
                         }
 
@@ -3412,26 +3513,43 @@ export function TabletLayout() {
                     >
                       {pagePair.map((pageNumber) => (
                         <div
-                          ref={pageRefs.current[pageNumber]}
+                          ref={(el) => {
+                            // Store ref for scrollIntoView
+                            if (!pageRefs.current[pageNumber]) {
+                              pageRefs.current[pageNumber] = React.createRef<HTMLDivElement>();
+                            }
+                            (pageRefs.current[pageNumber] as any).current = el;
+                            // Register with lazy loading hook for IntersectionObserver
+                            registerPageRef(pageNumber, el);
+                          }}
                           key={`page_${pageNumber}`}
+                          data-page-number={pageNumber}
                           style={{
                             flexShrink: 0,
                             margin: 0,
                           }}
                         >
-                          <Page
-                            pageNumber={pageNumber}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                            onLoadSuccess={() => onPageLoadSuccess({ pageNumber })}
-                            loading={<p>Loading page {pageNumber}...</p>}
-                            width={isTwoPageView ? 600 : 900}
-                          />
+                          {shouldRenderPage(pageNumber) ? (
+                            <Page
+                              pageNumber={pageNumber}
+                              renderTextLayer={true}
+                              renderAnnotationLayer={true}
+                              onLoadSuccess={() => onPageLoadSuccess({ pageNumber })}
+                              loading={<PageSkeleton width={isTwoPageView ? 600 : 900} pageNumber={pageNumber} isLoading={true} />}
+                              width={isTwoPageView ? 600 : 900}
+                            />
+                          ) : (
+                            <PageSkeleton
+                              width={isTwoPageView ? 600 : 900}
+                              pageNumber={pageNumber}
+                              isLoading={false}
+                            />
+                          )}
                         </div>
                       ))}
                       {selectionBox.pairIndex === index && (
-                        <SelectionOverlay 
-                          box={selectionBox} 
+                        <SelectionOverlay
+                          box={selectionBox}
                           containerRef={containerRefs.current[`pair_${index}`]}
                         />
                       )}
@@ -3459,7 +3577,7 @@ export function TabletLayout() {
 
         {/* Right Area: show the chatbot and conversation list on the right side panel */}
         <div className="content-right" ref={rightRef} style={{display: "none"}}>
-          <div id="chatContainer" style={{display: "none"}}><Chat functionCallHandler={functionCallHandlerForChat} realtimeClient={clientRef.current} getIsMuted={getIsMuted} ref={chatRef} /></div>
+          <div id="chatContainer" style={{display: "none"}}><Chat functionCallHandler={functionCallHandlerForChat} realtimeClient={clientRef.current} getIsMuted={getIsMuted} magazine={currentMagazineId} ref={chatRef} /></div>
 
           {/*content-main for test purpose*/}
           <div className="content-main" ref={conversationDivRef} style={{display: "none"}}>
@@ -3811,14 +3929,46 @@ export function TabletLayout() {
               </div>               
               <div className="speed-controls">
                 <div title='Select a new issue'><Book style={{ width: '13px', height: '13px' }} />:</div>
-                <select id="Magzine" name="Magzine" onChange={handleSelectChange} style={{height: '20px', width:'90%'}}>            
-                  {magzines.map((magazine, index) => (
-                          <option key={index} value={magazine}>
-                              {magazine}
-                          </option>
-                      ))}
-                </select>                            
-              </div>                                                                                             
+                <select id="Magzine" name="Magzine" onChange={handleSelectChange} disabled={magazinesLoading || !dynamicMagzines.length} style={{height:'20px', width:'90%'}}>
+                  {magazinesLoading && <option>Loading...</option>}
+                  {!magazinesLoading && dynamicMagzines.map((magazine, index) => (
+                    <option key={index} value={magazine}>{magazine}</option>
+                  ))}
+                </select>
+              </div>
+              {/*Magazine PDF Upload*/}
+              <div className="speed-controls upload-section">
+                <div title='Upload PDF Magazine'><Upload style={{ width: '13px', height: '13px' }} />:</div>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handleMagazineUpload}
+                  ref={fileInputRef}
+                  id="magazine-upload"
+                  style={{ display: 'none' }}
+                  disabled={isUploading}
+                />
+                <label
+                  htmlFor="magazine-upload"
+                  className={`upload-btn ${isUploading ? 'uploading' : ''}`}
+                  title="Upload PDF (max 100MB)"
+                >
+                  {isUploading ? `Uploading... ${uploadProgress}%` : 'Upload PDF'}
+                </label>
+              </div>
+              {/*Upload Progress Bar*/}
+              {isUploading && (
+                <div className="upload-progress-container">
+                  <div
+                    className="upload-progress-bar"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+              {/*Upload Error Message*/}
+              {uploadError && (
+                <div className="upload-error">{uploadError}</div>
+              )}
             </div>                         
           </div>   
         </div>       

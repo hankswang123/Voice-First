@@ -902,7 +902,7 @@
     border-radius: 5px;
     border: 1px solid #333; /* Adds a subtle border */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Adds a shadow for depth */
-    position: absolute;    
+    position: absolute;
     bottom: 100%; /* Position above the button */
     right: 50%;
     transform: translateX(5%);
@@ -912,7 +912,7 @@
     //transition: opacity 0.3s;
     transition: opacity 2s, visibility 0s 2s; /* Transition opacity over 3s, delay visibility change */
     width: 300px;
-    height: 300px;
+    height: 370px;
     z-index: 9999;
   }  
 
@@ -948,6 +948,55 @@
     visibility: hidden;
     opacity: 0;
     transition: opacity 1s, visibility 0s 1s; /* Transition opacity over 0.3s, delay visibility change */
+  }
+
+  /* Magazine Upload Styles */
+  .upload-section {
+    margin-top: 5px;
+  }
+
+  .upload-btn {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #4a90d9;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s;
+    width: auto;
+
+    &:hover {
+      background-color: #357abd;
+    }
+
+    &.uploading {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+  }
+
+  .upload-progress-container {
+    width: 90%;
+    height: 6px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+    margin: 8px auto;
+    overflow: hidden;
+  }
+
+  .upload-progress-bar {
+    height: 100%;
+    background-color: #4a90d9;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .upload-error {
+    color: #dc3545;
+    font-size: 0.8em;
+    margin-top: 5px;
+    padding: 4px;
   }  
 
   .captionsize {
@@ -1201,6 +1250,24 @@
         height: 100%;
         color: currentColor;
       }
+    }
+  }
+}
+
+/* PDF Lazy Loading - Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.pdf-page-skeleton {
+  &.loading {
+    .shimmer-overlay {
+      animation: shimmer 1.5s infinite;
     }
   }
 }
