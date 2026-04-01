@@ -1,13 +1,16 @@
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database file location
-const dbPath = path.join(__dirname, '..', 'data', 'chat_history.db');
+// Database file location - ensure directory exists
+const dataDir = path.join(__dirname, '..', 'data');
+fs.mkdirSync(dataDir, { recursive: true });
+const dbPath = path.join(dataDir, 'chat_history.db');
 
 // Initialize database connection
 let db = null;

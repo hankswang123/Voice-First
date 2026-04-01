@@ -33,19 +33,22 @@
     "@types/react-pdf": "^6.2.0",
     "@types/uuid": "^10.0.0",
     "concurrently": "^9.0.1",
+    "cross-env": "^10.1.0",
+    "kill-port": "^2.0.1",
     "nodemon": "^3.1.10",
     "react-scripts": "^5.0.1",
     "sass": "^1.93.2"
   },
   "engines": {
-    "node": ">=18 <21"
+    "node": ">=18"
   },
   "scripts": {
+    "prestart": "kill-port 3000 3001 || true",
     "dev": "node local-server.js",
     "relay": "node relay-server/index.js",
-    "start": "concurrently \"react-scripts start\" \"nodemon local-server.js\"",
-    "debug": "concurrently \"react-scripts start\" \"nodemon --inspect=9229 local-server.js\"",
-    "build": "react-scripts build",
+    "start": "concurrently \"cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start\" \"nodemon local-server.js\"",
+    "debug": "concurrently \"cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start\" \"nodemon --inspect=9229 local-server.js\"",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
     "predeploy": "npm run build",
     "dev:all": "concurrently \"npm run relay\" \"npm run dev\"",
     "start:prod": "npm run build && node local-server.js",
