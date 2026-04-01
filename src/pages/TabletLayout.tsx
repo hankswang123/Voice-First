@@ -1529,8 +1529,10 @@ export function TabletLayout() {
             )
             .join(' ');           
 
-          if(showTranslationRef.current){
-            setCurrentCaption(highlightedCaption + '<br />' + translationCaption.text); // Update the UI with translation            
+          if(showTranslationRef.current && translationCaption?.text){
+            setCurrentCaption(highlightedCaption + '<br />' + translationCaption.text); // Update the UI with translation
+          } else if(showTranslationRef.current && !translationCaption?.text){
+            setCurrentCaption(highlightedCaption + '<br /><span style="color: #888; font-style: italic; font-size: 0.9em;">Translation not available</span>');
           } else {
             setCurrentCaption(highlightedCaption); // Update the UI without translation
           }
