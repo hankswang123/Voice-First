@@ -43,6 +43,8 @@ npm run build
   - Audio file existence checks
   - Word card image caching in `src/wordCard` (temp) and `public/wordCard` (permanent)
   - WebSocket relay for OpenAI Realtime API mounted at `/realtime`
+  - Chat history REST API (`/api/chat/sessions/*`) backed by SQLite
+- **`db/chatHistory.js`**: SQLite database layer using `better-sqlite3`. Stores sessions, messages, and Realtime API items (including base64-encoded audio). Database file auto-created at `data/chat_history.db` on first run.
 - **`relay-server/lib/relay.js`**: `RealtimeRelay` class that proxies WebSocket connections between browser and OpenAI Realtime API using `@hankswang123/realtime-api-beta`
 
 ### Frontend (React + TypeScript)
@@ -50,13 +52,16 @@ npm run build
 - **`src/App.tsx`**: Entry point with device detection routing to `DesktopLayout` or `TabletLayout`
 - **`src/pages/DesktopLayout.tsx`** and **`TabletLayout.tsx`**: Main layouts containing audio player, PDF viewer, chat, and flashcards
 - **`src/utils/app_util.js`**: Magazine data management, keyword extraction, audio script transformation, and AI instruction building
+- **`src/hooks/useChatHistory.ts`**: React hook for chat history persistence (load/save messages and Realtime API items)
+- **`src/utils/chatHistoryApi.ts`**: Frontend API client for chat history endpoints
+- **`src/utils/audioSerializer.ts`**: Serialization of audio data (Int16Array/Blob URL to base64) for database storage
 
 ### Data Structure
 
 Magazine content lives in `public/play/<magazine-name>/`:
 
 - `<magazine-name>.wav|mp3|m4a` - Audio file
-- `audio_scripts.txt` - Timestamped transcripts
+- `audio_scripts.txt` - Timestamped transcripts (optionally with interleaved translation lines)
 - `keywords.txt` - JSON mapping keywords to `[startTime, endTime, pageNumber]`
 - `flashcards.txt` - JSON flashcard data
 
@@ -76,3 +81,7 @@ Required in `.env`:
 - PDF worker (`pdf.worker.min.mjs`) must be served from the same origin for deployment compatibility
 - Magazine list is fetched dynamically via `/api/magazines` endpoint, falling back to hardcoded list in `app_util.js`
 - Voice commands trigger function calls in the realtime API (pause, resume, volume, skip, etc.)
+- Chat history is stored in SQLite (`data/chat_history.db`) with no automatic expiration; data persists until manually cleared
+- The `data/` directory and database are auto-created on first server start
+- `prestart` hook automatically frees ports 3000/3001 before `npm start` using `kill-port`
+- `cross-env` with `NODE_OPTIONS=--openssl-legacy-provider` enables compatibility with Node.js v24+

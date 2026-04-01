@@ -32,7 +32,7 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Screenshot analyzation and read aloud by Realtime API
 - Search Videos by youtube.com integrated by [SERPAPI](https://serpapi.com/search-api)
 - Search News by google integrated by [SERPAPI](https://serpapi.com/search-api)
-- tbd: chat history should be saved for later reference
+- Chat history persistence (text, voice, images) saved to SQLite database
 
 ## An Education Scenario which Audio Copilot could help
 
@@ -54,6 +54,8 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - [OpenAI API Key](https://platform.openai.com/api-keys) - for Realtime API calling
 - [Recraft API Key](https://www.recraft.ai/profile/api) - for image generation
 - [SERP API Key](https://serpapi.com/manage-api-key) - for youtube video and google news search
+- [ZhipuAI API Key](https://open.bigmodel.cn/) - for ZhipuAI integration
+- [DeepSeek API Key](https://platform.deepseek.com/) - for DeepSeek chat
 
 <img src="/readme/audio-copilot.png" width="800" />
 <img src="/readme/audio-copilot-2.png" width="800" />
