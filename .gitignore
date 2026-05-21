@@ -148,3 +148,6 @@ data/
 
 # Production build output
 build/
+
+# Local Windows launcher (per-user, not part of the project)
+start.vbs
