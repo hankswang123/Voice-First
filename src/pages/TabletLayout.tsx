@@ -37,6 +37,7 @@ import { fetchMagzinesDynamic, magzines, fetchKeywords, transformAudioScripts, b
 import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
+import ShadowReading from "../components/shadow-reading/ShadowReading";
 import { Button } from '../components/button/Button';
 
 //import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -250,6 +251,10 @@ export function TabletLayout() {
   
   interface FlashcardItem { front: string; back: string; }
   const [flashcards, setFlashcards] = useState<FlashcardItem[]>([]);
+
+  const [isShadowMode, setIsShadowMode] = useState(false);
+  const isShadowModeRef = useRef(false);
+  const shadowAdvanceRef = useRef<(() => void) | null>(null);
 
 // 修改初始状态，添加 pairIndex
   const [selectionBox, setSelectionBox] = useState({ 
@@ -1945,14 +1950,15 @@ export function TabletLayout() {
   useEffect(() => {
     const closeButton = document.getElementById('closePopup');
     const popupOverlay = document.getElementById('popupOverlay');
-    const videoFrame = document.getElementById('videoFrame');  
+    const videoFrame = document.getElementById('videoFrame');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
+    const shadowContainer = document.getElementById('shadowReadingContainer');
 
     const closeKeywords = document.getElementById('closeKeywords');
     const floatingKeywords = document.getElementById('floatingKeywords');
     const openKeywords = document.getElementById('openKeywords');
 
-    if( closeButton && popupOverlay && videoFrame ) { 
+    if( closeButton && popupOverlay && videoFrame ) {
     // Close the popup and stop the video
       closeButton.addEventListener('click', () => {
         (videoFrame as HTMLIFrameElement).src = '';
@@ -1960,7 +1966,11 @@ export function TabletLayout() {
         if(flashcardsContainer){
           (flashcardsContainer as HTMLDivElement).style.display = 'none';
         }
-
+        if(shadowContainer){
+          (shadowContainer as HTMLDivElement).style.display = 'none';
+          isShadowModeRef.current = false;
+          setIsShadowMode(false);
+        }
       });
     }    
 
@@ -1994,32 +2004,38 @@ export function TabletLayout() {
       
       if (e.code === 'Space') {
           if (e.target !== chatInputBox && e.target !== menuInput) {
-          e.preventDefault(); // Prevent default space bar action (scrolling)        
-          /*  
-          if(isAudioExisting === false){
-            //if no audio available, Space shortcut is used for Mute/Unmute GPT-Realtime
-            if (muteBtnRef.current)
-              muteBtnRef.current.click();
+          e.preventDefault(); // Prevent default space bar action (scrolling)
+
+          if (isShadowModeRef.current && shadowAdvanceRef.current) {
+            shadowAdvanceRef.current();
             return;
-          } else{*/
-            if (playPauseBtnRef.current) {
+          }
+
+          if (playPauseBtnRef.current) {
               playPauseBtnRef.current.click(); // Trigger the button click event
 
               const wavStreamPlayer = wavStreamPlayerRef.current;
               if(wavStreamPlayer){
-                wavStreamPlayer.askStop = true; 
-              } 
+                wavStreamPlayer.askStop = true;
+              }
             }
-          //} 
+          //}
           
         }  
       } else if (e.code === 'Escape') {
 
-        //closeRightArrowNew();
-
         // Close the popup when pressing the Escape key
         const popupOverlay = document.getElementById('popupOverlay');
         if (popupOverlay) {
+          if (isShadowModeRef.current) {
+            const shadowContainer = document.getElementById('shadowReadingContainer');
+            if (shadowContainer) shadowContainer.style.display = 'none';
+            popupOverlay.style.display = 'none';
+            isShadowModeRef.current = false;
+            setIsShadowMode(false);
+            return;
+          }
+
           const videoFrame = document.getElementById('videoFrame');
           if (videoFrame) {
             (videoFrame as HTMLIFrameElement).src = '';
@@ -2027,7 +2043,7 @@ export function TabletLayout() {
           const imageFrame = document.getElementById('imageFrame');
           if (imageFrame) {
             (imageFrame as HTMLImageElement).src = '';
-          }          
+          }
 
           if( popupOverlay.style.display === 'flex' ){
             popupOverlay.style.display = 'none';
@@ -2252,6 +2268,42 @@ export function TabletLayout() {
     if (videoFrame) (videoFrame as HTMLIFrameElement).style.display = 'none';
     if (imageFrame) (imageFrame as HTMLImageElement).style.display = 'none';
     popupOverlay.style.display = 'flex';
+  };
+
+  const toggleShadowReading = () => {
+    const popupOverlay = document.getElementById('popupOverlay');
+    const shadowContainer = document.getElementById('shadowReadingContainer');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    const videoFrame = document.getElementById('videoFrame');
+    const imageFrame = document.getElementById('imageFrame');
+    const popupContent = document.getElementById('popupContent');
+    if (!popupOverlay || !shadowContainer) return;
+
+    const isVisible =
+      popupOverlay.style.display === 'flex' &&
+      shadowContainer.style.display === 'flex';
+
+    if (isVisible) {
+      shadowContainer.style.display = 'none';
+      popupOverlay.style.display = 'none';
+      isShadowModeRef.current = false;
+      setIsShadowMode(false);
+      return;
+    }
+
+    (popupContent as HTMLElement).className = 'popup-content-shadow';
+    shadowContainer.style.display = 'flex';
+    if (flashcardsContainer) flashcardsContainer.style.display = 'none';
+    if (videoFrame) (videoFrame as HTMLIFrameElement).style.display = 'none';
+    if (imageFrame) (imageFrame as HTMLImageElement).style.display = 'none';
+    popupOverlay.style.display = 'flex';
+    isShadowModeRef.current = true;
+    setIsShadowMode(true);
+
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
   };  
   
   /*
@@ -3232,6 +3284,31 @@ export function TabletLayout() {
                 alignItems: 'center',
                 backgroundColor: 'lightgrey'
               }}> <Flashcards cards={flashcards} realtimeClient={clientRef.current} /></div>
+          {/* Show Shadow Reading here */}
+          <div id="shadowReadingContainer"
+               style={{
+                display: 'none',
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                backgroundColor: '#1a1a2e'
+              }}>
+            <ShadowReading
+              audioCaptions={audioCaptions.current}
+              audioRef={audioRef}
+              playbackRate={playbackRate}
+              isActive={isShadowMode}
+              onExit={() => {
+                const shadowContainer = document.getElementById('shadowReadingContainer');
+                const popupOverlay = document.getElementById('popupOverlay');
+                if (shadowContainer) shadowContainer.style.display = 'none';
+                if (popupOverlay) popupOverlay.style.display = 'none';
+                isShadowModeRef.current = false;
+                setIsShadowMode(false);
+              }}
+              advanceRef={shadowAdvanceRef}
+            />
+          </div>
           {/* Show Youtube Video here */}              
           <iframe id="videoFrame" width="800" height="450" src="" allow="fullscreen" allowFullScreen style={{display: 'none'}}></iframe>
           {/* Show Image created here */} 
@@ -3672,7 +3749,7 @@ export function TabletLayout() {
           <div className="captionsize" style={{display: isCaptionVisible? 'none' : 'flex'}}>Show caption to adjust it's size</div>
         </div>
         {/* Add a div to display the current caption */}
-        {isCaptionVisible && ( 
+        {isCaptionVisible && !isShadowMode && ( 
           <div id='captionDisplay' className="caption-display"
                dangerouslySetInnerHTML={{ __html: currentCaption }}
                style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
@@ -3687,6 +3764,16 @@ export function TabletLayout() {
                 buttonStyle={'regular'}
                 onClick={toggleFlashcards}
                 className='button'
+        />
+
+        <Button
+                label={'Shadow'}
+                iconPosition={'start'}
+                icon={Mic}
+                buttonStyle={'regular'}
+                onClick={toggleShadowReading}
+                className='button'
+                disabled={!isScriptExisting}
         />
 
         {/* Show/Hide Captions Button */}
