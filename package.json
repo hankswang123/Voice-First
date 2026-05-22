@@ -4,7 +4,6 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@hankswang123/realtime-api-beta": "github:hankswang123/openai-realtime-api-beta#9f3d5b60bc0326d4293d88cf4d84a3aa8cda05ef",
     "axios": "^1.12.2",
     "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",
