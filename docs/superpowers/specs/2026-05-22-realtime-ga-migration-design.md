@@ -483,13 +483,31 @@ After 30 days, delete `backup/pre-realtime-ga`.
 
 ---
 
+## Discovered during implementation
+
+The plan estimated "~30 lines of net behavioural change." The actual figure is **~80 lines** because Tier-2 testing surfaced four GA-shape divergences that the protocol-side analysis (handshake-only) missed. Each was patched as its own commit on `feature/realtime-ga-migration`:
+
+| # | Commit | GA divergence | Remedy |
+|---|---|---|---|
+| 1 | `5354cdc` | GA's `session.update` rejects 8 Beta-only fields (`modalities`, `voice`, `input_audio_format`, `output_audio_format`, `input_audio_transcription`, `turn_detection`, `temperature`, `max_response_output_tokens`) as unknown parameters. | `client.js`: strip the 8 fields from the payload before `realtime.send('session.update', ...)`. Defensive — keeps `this.sessionConfig` schema intact for the layouts. |
+| 2 | `820e605` | `server.conversation.item.created` was renamed to `server.conversation.item.added` in GA. GA also emits a new `server.conversation.item.done`. | Wire both `.created` and `.added` names to the same handler in `client.js` and `conversation.js` `EventProcessors`. Treat `.done` as a status-only update. |
+| 3 | `0e60534` | Audio streaming events were prefixed with `output_` in GA: `response.audio.delta` → `response.output_audio.delta`; `response.audio_transcript.delta` → `response.output_audio_transcript.delta`. | Wire the GA names alongside the Beta names in `client.js` and add aliases to `EventProcessors` in `conversation.js`. |
+| 4 | `2db0f20` | GA requires `session.type` (`'realtime'` for audio sessions, `'transcription'` for transcribe-only). Beta did not. | `client.js`: inject `session.type = 'realtime'` if not provided. |
+
+**Pattern to notice:** the divergences split into two classes — _outbound payload shape_ (1, 4) and _inbound event names_ (2, 3). All four were found by extending `tools/test-relay.mjs` from a single text-response probe into four probes covering text, tool calls, mid-response cancel, and graceful close. The four-probe suite passes end-to-end against real OpenAI.
+
+**Layout files were never touched** to fix any of these. The fixes all live in the vendored library, which validates the in-tree fork architecture choice (Option A1) — every divergence is a single library-internal patch, not a layout-by-layout migration.
+
+**Implication for future GA changes:** when OpenAI evolves the Realtime API further, the same playbook applies — extend the Tier-2 probe, identify the divergence, patch `client.js` or `conversation.js`, commit. No layout work required.
+
 ## Risk register
 
-| Risk | Likelihood | Mitigation |
+| Risk | Likelihood at planning | Outcome |
 |---|---|---|
-| GA rejects the new handshake too (some other field we missed) | Low | Tier 1 handshake test verifies before any merge. |
-| GA renamed an inbound event the library handles | Low–Med | Tier 3 scenarios cover every Beta-synthesized event class. Fix is local to a single `EventProcessors` entry in `conversation.js`. |
-| Render's preview deploy doesn't pick up env var changes | Low | `REALTIME_MODEL` is optional; default is `gpt-realtime-mini`. |
+| GA rejects the new handshake too (some other field we missed) | Low | **Did not occur.** Tier-1 handshake passed first try. |
+| GA renamed an inbound event the library handles | Low–Med | **Materialized.** Three event renames (see "Discovered during implementation" above). All fixed via aliases in `client.js` and `conversation.js`. |
+| GA-only outbound payload requirements (not in plan's risk register) | (not anticipated) | **Materialized.** Two outbound shape changes — `session.type` required, 8 session fields rejected. Fixed in `client.js`. |
+| Render's preview deploy doesn't pick up env var changes | Low | TBD — deferred to Tier-3 verification on the preview deploy. |
 | Vendored code drift from upstream | N/A | Upstream is unmaintained against a disabled API. There is no upstream to drift from. |
 
 ## Source of truth
