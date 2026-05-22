@@ -6,8 +6,7 @@ import { AssistantStream } from "openai/lib/AssistantStream";
 import { OpenAI } from "openai";
 import { AssistantStreamEvent } from "openai/resources/beta";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
-import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
-import { RealtimeClient } from '@hankswang123/realtime-api-beta';
+import { RealtimeClient, type ItemType } from '../../lib/realtime/index.js';
 
 import { Button } from '../button/Button';
 import { Mic, MicOff, Send, Trash2 } from 'react-feather';

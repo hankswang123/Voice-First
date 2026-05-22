@@ -3,7 +3,7 @@
  * Handles communication with the server's chat history endpoints.
  */
 
-import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
+import { type ItemType } from '../lib/realtime/index.js';
 import {
   int16ArrayToBase64,
   base64ToInt16Array,
