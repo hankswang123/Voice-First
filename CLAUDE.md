@@ -45,7 +45,7 @@ npm run build
   - WebSocket relay for OpenAI Realtime API mounted at `/realtime`
   - Chat history REST API (`/api/chat/sessions/*`) backed by SQLite
 - **`db/chatHistory.js`**: SQLite database layer using `better-sqlite3`. Stores sessions, messages, and Realtime API items (including base64-encoded audio). Database file auto-created at `data/chat_history.db` on first run.
-- **`relay-server/lib/relay.js`**: `RealtimeRelay` class that proxies WebSocket connections between browser and OpenAI Realtime API using `@hankswang123/realtime-api-beta`
+- **`relay-server/lib/relay.js`**: `RealtimeRelay` class that proxies WebSocket connections between browser and OpenAI Realtime API using the in-tree vendored library at `src/lib/realtime/` (see "Realtime library (vendored)" below)
 
 ### Frontend (React + TypeScript)
 
@@ -74,6 +74,30 @@ Required in `.env`:
 - `RECRAFT_API_KEY` and `RECRAFT_BASE_URL` - For image generation
 - `ZHIPUAI_API_KEY` - For ZhipuAI integration
 - `DEEPSEEK_API_KEY` and `DEEPSEEK_BASE_URL` - For DeepSeek chat
+
+## Realtime library (vendored)
+
+`src/lib/realtime/` is a **vendored fork** of the `@hankswang123/realtime-api-beta` library, with surgical patches for OpenAI Realtime GA. Treat it as part of the codebase, not as an npm dependency. **Do not casually refactor** — every patch is intentional and protects against a real GA-vs-Beta divergence.
+
+### Files
+- `api.js` — low-level `RealtimeAPI` (WebSocket + raw event dispatch). Patched: drops Beta subprotocol/header on connect; honours `process.env.REALTIME_MODEL`; re-emits GA-renamed inbound events under their Beta names so subscribers can keep using Beta vocabulary.
+- `client.js` — high-level `RealtimeClient`. Patched: `updateSession()` strips 8 GA-rejected session fields and injects `session.type='realtime'` before sending.
+- `conversation.js` — in-memory state machine (audio Int16 stitching, transcript queueing, function-call handling). Patched: alias keys in `EventProcessors` so `processEvent()` handles GA event names too; one latent transcript-queue bug fix at line 50.
+- `event_handler.js`, `utils.js` — verbatim copies, unchanged.
+- `index.js` — public re-exports of `RealtimeClient`, `RealtimeAPI`, `RealtimeConversation`, `RealtimeUtils`, `RealtimeEventHandler`.
+- `index.d.ts` — TypeScript declarations (permissive `ItemType` interface + `RealtimeClient` class) since the upstream JS library ships no `.d.ts`.
+
+### Rules of engagement
+- All consumers (relay-server, layouts, components, hooks, utils) import from `'../lib/realtime/index.js'` (or relative depth equivalent). **Never** add `@hankswang123/realtime-api-beta` back to `package.json`.
+- When OpenAI ships another GA-shape change, follow the same pattern: extend `tools/test-relay.mjs` to surface the failure, identify the divergence, patch `api.js`/`client.js`/`conversation.js` minimally, commit one fix at a time. **Do not edit layout files** to work around library divergences.
+- Two test tiers exist:
+  - `node src/lib/realtime/__tests__/handshake.test.mjs` — Tier 1, ~2s, confirms the handshake reaches OpenAI.
+  - `node tools/test-relay.mjs` — Tier 2, ~30s, requires the relay running, exercises text/tool/cancel/close probes end-to-end.
+- Both tiers require `OPENAI_API_KEY` in `.env` and outbound network access to `api.openai.com` (corporate firewalls without an OpenAI-permitted egress will time out).
+- Default model is `gpt-realtime-mini`. Override via `REALTIME_MODEL` env var (server-side) or `REACT_APP_REALTIME_MODEL` (browser-side, baked at build time by CRA).
+
+### Reference
+Full migration history at `docs/superpowers/specs/2026-05-22-realtime-ga-migration-design.md` (spec) and `docs/superpowers/plans/2026-05-22-realtime-ga-migration.md` (plan).
 
 ## Key Patterns
 
