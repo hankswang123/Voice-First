@@ -163,9 +163,25 @@ export function getMessages(sessionId) {
   `).all(sessionId);
 }
 
+// Ensure a session row exists for the given id. If missing, insert a
+// placeholder row so foreign-key constraints on messages/items succeed.
+//
+// Why: on Render free tier the SQLite file lives on ephemeral disk, so
+// a deploy wipes data/chat_history.db while browsers still hold session
+// ids in localStorage. The first POST to add a message after a deploy
+// would otherwise hit FOREIGN KEY constraint failed and surface to the
+// UI as a generic connection error.
+function ensureSession(db, sessionId) {
+  db.prepare(`
+    INSERT OR IGNORE INTO sessions (id, magazine_name) VALUES (?, ?)
+  `).run(sessionId, 'unknown');
+}
+
 // Add a message to a session
 export function addMessage(sessionId, role, text) {
   const db = getDb();
+
+  ensureSession(db, sessionId);
 
   const result = db.prepare(`
     INSERT INTO messages (session_id, role, text) VALUES (?, ?, ?)
@@ -205,6 +221,8 @@ export function getItems(sessionId) {
 // Add an item to a session
 export function addItem(sessionId, item) {
   const db = getDb();
+
+  ensureSession(db, sessionId);
 
   // Check if item already exists
   const existing = db.prepare('SELECT id FROM items WHERE id = ?').get(item.id);
