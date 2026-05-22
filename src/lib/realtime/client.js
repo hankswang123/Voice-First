@@ -535,6 +535,24 @@ export class RealtimeClient extends RealtimeEventHandler {
     );
     const session = { ...this.sessionConfig };
     session.tools = useTools;
+    // GA (gpt-realtime-mini) rejects several Beta session fields as unknown
+    // parameters. Strip them before sending so session.update does not error.
+    // Fields confirmed rejected by GA: modalities, voice, input_audio_format,
+    // output_audio_format, input_audio_transcription, turn_detection,
+    // temperature, max_response_output_tokens.
+    const GA_UNSUPPORTED_SESSION_FIELDS = [
+      'modalities',
+      'voice',
+      'input_audio_format',
+      'output_audio_format',
+      'input_audio_transcription',
+      'turn_detection',
+      'temperature',
+      'max_response_output_tokens',
+    ];
+    for (const key of GA_UNSUPPORTED_SESSION_FIELDS) {
+      delete session[key];
+    }
     if (this.realtime.isConnected()) {
       this.realtime.send('session.update', { session });
     }
