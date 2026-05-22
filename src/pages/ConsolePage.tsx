@@ -24,8 +24,7 @@ if (!LOCAL_RELAY_SERVER_URL) {
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 
-import { RealtimeClient } from '@hankswang123/realtime-api-beta';
-import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
+import { RealtimeClient, type ItemType } from '../lib/realtime/index.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import styles from './Flashcards.module.css';
 import { Volume2, Square, Globe } from 'react-feather';
 
-import { RealtimeClient } from '@hankswang123/realtime-api-beta';
+import { RealtimeClient } from '../../lib/realtime/index.js';
 
 // Optional: accept props if you already have external data
 interface Card {

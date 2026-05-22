@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ItemType } from '@hankswang123/realtime-api-beta/dist/lib/client.js';
+import { type ItemType } from '../lib/realtime/index.js';
 import * as chatApi from '../utils/chatHistoryApi';
 import { ChatMessage, SerializedItem } from '../utils/chatHistoryApi';
 
