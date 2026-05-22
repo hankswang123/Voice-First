@@ -180,6 +180,18 @@ export class RealtimeAPI extends RealtimeEventHandler {
     this.log(`received:`, eventName, event);
     this.dispatch(`server.${eventName}`, event);
     this.dispatch('server.*', event);
+    // GA event-name aliases: re-emit under Beta names so subscriptions
+    // written against the Beta event vocabulary keep firing under GA.
+    // See spec: docs/superpowers/specs/2026-05-22-realtime-ga-migration-design.md
+    const GA_TO_BETA = {
+      'conversation.item.added': 'conversation.item.created',
+      'response.output_audio.delta': 'response.audio.delta',
+      'response.output_audio_transcript.delta': 'response.audio_transcript.delta',
+    };
+    const betaAlias = GA_TO_BETA[eventName];
+    if (betaAlias) {
+      this.dispatch(`server.${betaAlias}`, event);
+    }
     return true;
   }
 
