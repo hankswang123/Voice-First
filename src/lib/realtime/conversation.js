@@ -47,7 +47,7 @@ export class RealtimeConversation {
       }
       // If we have a transcript item, can pre-populate transcript
       if (this.queuedTranscriptItems[newItem.id]) {
-        newItem.formatted.transcript = this.queuedTranscriptItems.transcript;
+        newItem.formatted.transcript = this.queuedTranscriptItems[newItem.id].transcript;
         delete this.queuedTranscriptItems[newItem.id];
       }
       if (newItem.type === 'message') {
