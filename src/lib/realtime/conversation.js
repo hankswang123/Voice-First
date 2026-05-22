@@ -262,6 +262,12 @@ export class RealtimeConversation {
     // Wire the alias so processEvent() handles both names identically.
     this.EventProcessors['conversation.item.added'] =
       this.EventProcessors['conversation.item.created'];
+    // GA renamed response.audio_transcript.delta -> response.output_audio_transcript.delta
+    // and response.audio.delta -> response.output_audio.delta.
+    this.EventProcessors['response.output_audio_transcript.delta'] =
+      this.EventProcessors['response.audio_transcript.delta'];
+    this.EventProcessors['response.output_audio.delta'] =
+      this.EventProcessors['response.audio.delta'];
     this.clear();
   }
 

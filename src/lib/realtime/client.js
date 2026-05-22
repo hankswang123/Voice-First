@@ -351,7 +351,14 @@ export class RealtimeClient extends RealtimeEventHandler {
       'server.response.audio_transcript.delta',
       handlerWithDispatch,
     );
+    // GA renamed response.audio_transcript.delta -> response.output_audio_transcript.delta
+    this.realtime.on(
+      'server.response.output_audio_transcript.delta',
+      handlerWithDispatch,
+    );
     this.realtime.on('server.response.audio.delta', handlerWithDispatch);
+    // GA renamed response.audio.delta -> response.output_audio.delta
+    this.realtime.on('server.response.output_audio.delta', handlerWithDispatch);
     this.realtime.on('server.response.text.delta', handlerWithDispatch);
     this.realtime.on(
       'server.response.function_call_arguments.delta',
