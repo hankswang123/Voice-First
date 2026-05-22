@@ -567,6 +567,12 @@ export class RealtimeClient extends RealtimeEventHandler {
     for (const key of GA_UNSUPPORTED_SESSION_FIELDS) {
       delete session[key];
     }
+    // OpenAI Realtime GA requires session.type. Default to "realtime"
+    // (audio realtime); the alternative "transcription" is not used by
+    // this client. See spec: docs/superpowers/specs/2026-05-22-realtime-ga-migration-design.md
+    if (!session.type) {
+      session.type = 'realtime';
+    }
     if (this.realtime.isConnected()) {
       this.realtime.send('session.update', { session });
     }
