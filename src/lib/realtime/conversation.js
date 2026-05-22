@@ -19,6 +19,8 @@ export class RealtimeConversation {
   defaultFrequency = 24_000; // 24,000 Hz
 
   EventProcessors = {
+    // GA renamed conversation.item.created -> conversation.item.added.
+    // Keep both keys pointing to the same handler for back-compat.
     'conversation.item.created': (event) => {
       const { item } = event;
       // deep copy values
@@ -73,6 +75,19 @@ export class RealtimeConversation {
         newItem.formatted.output = newItem.output;
       }
       return { item: newItem, delta: null };
+    },
+    // GA event name alias: conversation.item.added = conversation.item.created
+    // The GA Realtime API emits .added instead of .created.
+    // conversation.item.done is also emitted by GA (signals the item is
+    // complete) — we treat it as a no-op at the conversation layer since
+    // status is already managed via response.output_item.done.
+    'conversation.item.done': (event) => {
+      const { item } = event;
+      const foundItem = item && this.itemLookup[item.id];
+      if (foundItem && item.status) {
+        foundItem.status = item.status;
+      }
+      return { item: foundItem || null, delta: null };
     },
     'conversation.item.truncated': (event) => {
       const { item_id, audio_end_ms } = event;
@@ -243,6 +258,10 @@ export class RealtimeConversation {
    * @returns {RealtimeConversation}
    */
   constructor() {
+    // GA renamed conversation.item.created -> conversation.item.added.
+    // Wire the alias so processEvent() handles both names identically.
+    this.EventProcessors['conversation.item.added'] =
+      this.EventProcessors['conversation.item.created'];
     this.clear();
   }
 

@@ -327,13 +327,20 @@ export class RealtimeClient extends RealtimeEventHandler {
     );
 
     // Handlers to update application state
-    this.realtime.on('server.conversation.item.created', (event) => {
+    // Wire both Beta (.created) and GA (.added) event names to the same handler
+    // so the client works against both API versions.
+    const itemCreatedHandler = (event) => {
       const { item } = handlerWithDispatch(event);
       this.dispatch('conversation.item.appended', { item });
       if (item.status === 'completed') {
         this.dispatch('conversation.item.completed', { item });
       }
-    });
+    };
+    this.realtime.on('server.conversation.item.created', itemCreatedHandler);
+    // GA renamed conversation.item.created -> conversation.item.added
+    this.realtime.on('server.conversation.item.added', itemCreatedHandler);
+    // GA emits conversation.item.done; handle it via conversation.js processor
+    this.realtime.on('server.conversation.item.done', handlerWithDispatch);
     this.realtime.on('server.conversation.item.truncated', handlerWithDispatch);
     this.realtime.on('server.conversation.item.deleted', handlerWithDispatch);
     this.realtime.on(
