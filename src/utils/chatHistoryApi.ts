@@ -12,6 +12,20 @@ import {
   int16ArrayToWavUrl
 } from './audioSerializer';
 
+// ==================== AUTH TOKEN INJECTION ====================
+
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  if (_authToken) headers['Authorization'] = `Bearer ${_authToken}`;
+  return headers;
+}
+
 // ==================== TYPES ====================
 
 export interface ChatSession {
@@ -50,7 +64,7 @@ export interface SerializedItem {
  * Get or create an active session for a magazine.
  */
 export async function getOrCreateSession(magazine: string): Promise<ChatSession> {
-  const response = await fetch(`/api/chat/sessions/${encodeURIComponent(magazine)}`);
+  const response = await fetch(`/api/chat/sessions/${encodeURIComponent(magazine)}`, { headers: authHeaders() });
   if (!response.ok) {
     throw new Error(`Failed to get/create session: ${response.statusText}`);
   }
@@ -64,7 +78,7 @@ export async function listSessions(magazine?: string): Promise<ChatSession[]> {
   const url = magazine
     ? `/api/chat/sessions?magazine=${encodeURIComponent(magazine)}`
     : '/api/chat/sessions';
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: authHeaders() });
   if (!response.ok) {
     throw new Error(`Failed to list sessions: ${response.statusText}`);
   }
@@ -77,7 +91,8 @@ export async function listSessions(magazine?: string): Promise<ChatSession[]> {
  */
 export async function deleteSession(sessionId: string): Promise<void> {
   const response = await fetch(`/api/chat/sessions/${sessionId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: authHeaders()
   });
   if (!response.ok) {
     throw new Error(`Failed to delete session: ${response.statusText}`);
@@ -89,7 +104,8 @@ export async function deleteSession(sessionId: string): Promise<void> {
  */
 export async function clearSession(sessionId: string): Promise<void> {
   const response = await fetch(`/api/chat/sessions/${sessionId}/clear`, {
-    method: 'POST'
+    method: 'POST',
+    headers: authHeaders()
   });
   if (!response.ok) {
     throw new Error(`Failed to clear session: ${response.statusText}`);
@@ -102,7 +118,7 @@ export async function clearSession(sessionId: string): Promise<void> {
  * Load all messages for a session.
  */
 export async function loadMessages(sessionId: string): Promise<ChatMessage[]> {
-  const response = await fetch(`/api/chat/sessions/${sessionId}/messages`);
+  const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, { headers: authHeaders() });
   if (!response.ok) {
     throw new Error(`Failed to load messages: ${response.statusText}`);
   }
@@ -120,7 +136,7 @@ export async function saveMessage(
 ): Promise<ChatMessage> {
   const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ role, text })
   });
   if (!response.ok) {
@@ -135,7 +151,7 @@ export async function saveMessage(
  * Load all items for a session.
  */
 export async function loadItems(sessionId: string): Promise<SerializedItem[]> {
-  const response = await fetch(`/api/chat/sessions/${sessionId}/items`);
+  const response = await fetch(`/api/chat/sessions/${sessionId}/items`, { headers: authHeaders() });
   if (!response.ok) {
     throw new Error(`Failed to load items: ${response.statusText}`);
   }
@@ -204,7 +220,7 @@ export async function saveItem(
 
   const response = await fetch(`/api/chat/sessions/${sessionId}/items`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(serialized)
   });
   if (!response.ok) {
