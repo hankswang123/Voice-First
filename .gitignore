@@ -151,3 +151,6 @@ build/
 
 # Local Windows launcher (per-user, not part of the project)
 start.vbs
+
+# Git worktrees
+.worktrees/
