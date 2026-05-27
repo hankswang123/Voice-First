@@ -3951,7 +3951,9 @@ export function TabletLayout() {
           {user && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '12px', fontSize: '13px', color: '#666' }}>
               <span>{user.displayName || user.email}</span>
-              <LogOut style={{ width: '16px', height: '16px', cursor: 'pointer', color: '#999' }} onClick={logout} title="Logout" />
+              <div title="Logout" style={{ cursor: 'pointer' }}>
+                <LogOut style={{ width: '16px', height: '16px', color: '#999' }} onClick={logout} />
+              </div>
             </div>
           )}
           <div title='Realtime Session Countdown' style={{ fontSize: '1em', userSelect: 'none', marginRight: '7px' }}><><CountdownTimer startTime={30} /> </></div>      
