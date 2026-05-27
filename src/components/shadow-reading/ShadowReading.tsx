@@ -382,7 +382,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
             {i === displayIndex && isFillBlankMode && blankData ? (
               <div className={styles.fillBlankContainer}>
                 {words.map((word, wi) => (
-                  <span key={wi} className={styles.fillBlankWord}>
+                  <React.Fragment key={wi}>
                     {blankData.blankedIndices.has(wi) ? (
                       (() => {
                         const clean = word.replace(/[^a-zA-Z'-]/g, '');
@@ -426,8 +426,8 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
                     ) : (
                       <span className={styles.fillBlankStatic}>{word}</span>
                     )}
-                    {' '}
-                  </span>
+                    {wi < words.length - 1 && ' '}
+                  </React.Fragment>
                 ))}
                 {showSuccess && (
                   <div className={styles.successOverlay}>
