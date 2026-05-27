@@ -44,6 +44,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
   const [isWaiting, setIsWaiting] = React.useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeItemRef = useRef<HTMLDivElement | null>(null);
+  const inputRefsMap = useRef<Map<string, HTMLInputElement>>(new Map());
   const [mode, setMode] = useState<'sequential' | 'fillBlank'>('sequential');
   const [blankData, setBlankData] = useState<{
     blankedIndices: Set<number>;
@@ -358,11 +359,18 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
   if (!isActive) return null;
 
+  const words = blankData?.words || [];
+  const isFillBlankMode = mode === 'fillBlank' && blankData;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.title}>Shadow Reading / 影子跟读</span>
-        <span className={styles.hint}>Space: next sentence | Esc: exit</span>
+        <span className={styles.hint}>
+          {isFillBlankMode
+            ? 'Type to fill blanks | Space: skip'
+            : 'Space: next sentence | Esc: exit'}
+        </span>
       </div>
       <div className={styles.scrollArea}>
         {englishCaptions.map((caption, i) => (
@@ -371,11 +379,79 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
             ref={(el) => { if (i === displayIndex) activeItemRef.current = el; }}
             className={`${styles.sentence} ${i === displayIndex ? styles.active : ''} ${i < displayIndex ? styles.past : ''}`}
           >
-            {caption.text}
+            {i === displayIndex && isFillBlankMode && blankData ? (
+              <div className={styles.fillBlankContainer}>
+                {words.map((word, wi) => (
+                  <span key={wi} className={styles.fillBlankWord}>
+                    {blankData.blankedIndices.has(wi) ? (
+                      (() => {
+                        const clean = word.replace(/[^a-zA-Z'-]/g, '');
+                        const letterInputs = blankInputs.get(wi) || [];
+                        const validation = blankValidation.get(wi) || [];
+                        const wordCorrect = validation.length > 0 && validation.every(v => v === 'correct');
+                        return (
+                          <span className={`${styles.fillBlankWord} ${wordCorrect ? 'correct' : ''}`}>
+                            {clean.split('').map((_, ci) => {
+                              const key = `${wi}-${ci}`;
+                              const val = letterInputs[ci] || '';
+                              const state = validation[ci] || 'empty';
+                              return (
+                                <span key={ci} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                                  <input
+                                    ref={(el) => {
+                                      if (el) inputRefsMap.current.set(key, el);
+                                    }}
+                                    className={`${styles.fillBlankInput} ${
+                                      state === 'correct' ? styles.correct :
+                                      state === 'wrong' ? styles.wrong : ''
+                                    }`}
+                                    type="text"
+                                    maxLength={1}
+                                    value={val}
+                                    onChange={(e) => handleLetterInput(wi, ci, e.target.value, inputRefsMap)}
+                                    onKeyDown={(e) => handleLetterKeydown(wi, ci, e, inputRefsMap)}
+                                    autoComplete="off"
+                                    autoCapitalize="off"
+                                    spellCheck={false}
+                                  />
+                                  <span className={styles.fillBlankWrongX}>
+                                    {state === 'wrong' ? '×' : ''}
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span className={styles.fillBlankStatic}>{word}</span>
+                    )}
+                    {' '}
+                  </span>
+                ))}
+                {showSuccess && (
+                  <div className={styles.successOverlay}>
+                    <span className={styles.successCheck}>{'✓'}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              caption.text
+            )}
+            {i === displayIndex && isWaiting && !isFillBlankMode && (
+              <div className={styles.toolbar}>
+                <button className={styles.toolbarBtn} onClick={replaySentence}>
+                  {'↻'} Repeat
+                </button>
+                <button className={styles.toolbarBtn} onClick={enterFillBlank}>
+                  {'✎'} Fill Blank
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
-      {isWaiting && displayIndex < englishCaptions.length - 1 && (
+      {isWaiting && displayIndex < englishCaptions.length - 1 && !isFillBlankMode && (
         <div className={styles.waitIndicator}>
           Press Space to continue...
         </div>
