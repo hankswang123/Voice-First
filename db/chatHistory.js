@@ -39,6 +39,13 @@ function initSchema() {
     )
   `);
 
+  // Migration: add user_id to sessions if missing (old database)
+  const sessionColumns = db.prepare("PRAGMA table_info(sessions)").all();
+  const hasUserId = sessionColumns.some(c => c.name === 'user_id');
+  if (!hasUserId) {
+    db.exec(`ALTER TABLE sessions ADD COLUMN user_id TEXT NOT NULL DEFAULT 'anonymous'`);
+  }
+
   // Messages table
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -74,58 +81,80 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_sessions_magazine ON sessions(magazine_name);
     CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
     CREATE INDEX IF NOT EXISTS idx_items_session ON items(session_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
   `);
 }
 
 // ==================== SESSION OPERATIONS ====================
 
-// List all sessions, optionally filtered by magazine
-export function listSessions(magazineName = null) {
+// List all sessions, optionally filtered by magazine and/or userId
+export function listSessions(magazineName = null, userId = null) {
   const db = getDb();
+
+  if (magazineName && userId) {
+    return db.prepare(`
+      SELECT id, magazine_name as magazineName, user_id as userId,
+             created_at as createdAt, updated_at as updatedAt, is_active as isActive
+      FROM sessions
+      WHERE magazine_name = ? AND user_id = ?
+      ORDER BY updated_at DESC
+    `).all(magazineName, userId);
+  }
+
+  if (userId) {
+    return db.prepare(`
+      SELECT id, magazine_name as magazineName, user_id as userId,
+             created_at as createdAt, updated_at as updatedAt, is_active as isActive
+      FROM sessions
+      WHERE user_id = ?
+      ORDER BY updated_at DESC
+    `).all(userId);
+  }
+
   if (magazineName) {
     return db.prepare(`
-      SELECT id, magazine_name as magazineName, created_at as createdAt,
-             updated_at as updatedAt, is_active as isActive
+      SELECT id, magazine_name as magazineName, user_id as userId,
+             created_at as createdAt, updated_at as updatedAt, is_active as isActive
       FROM sessions
       WHERE magazine_name = ?
       ORDER BY updated_at DESC
     `).all(magazineName);
   }
+
   return db.prepare(`
-    SELECT id, magazine_name as magazineName, created_at as createdAt,
-           updated_at as updatedAt, is_active as isActive
+    SELECT id, magazine_name as magazineName, user_id as userId,
+           created_at as createdAt, updated_at as updatedAt, is_active as isActive
     FROM sessions
     ORDER BY updated_at DESC
   `).all();
 }
 
-// Get or create active session for a magazine
-export function getOrCreateSession(magazineName) {
+// Get or create active session for a magazine, scoped to a user
+export function getOrCreateSession(magazineName, userId = 'anonymous') {
   const db = getDb();
 
-  // First try to find an active session
   let session = db.prepare(`
-    SELECT id, magazine_name as magazineName, created_at as createdAt,
-           updated_at as updatedAt, is_active as isActive
+    SELECT id, magazine_name as magazineName, user_id as userId,
+           created_at as createdAt, updated_at as updatedAt, is_active as isActive
     FROM sessions
-    WHERE magazine_name = ? AND is_active = 1
+    WHERE magazine_name = ? AND user_id = ? AND is_active = 1
     ORDER BY updated_at DESC
     LIMIT 1
-  `).get(magazineName);
+  `).get(magazineName, userId);
 
   if (session) {
     return session;
   }
 
-  // Create a new session
   const id = uuidv4();
   db.prepare(`
-    INSERT INTO sessions (id, magazine_name) VALUES (?, ?)
-  `).run(id, magazineName);
+    INSERT INTO sessions (id, magazine_name, user_id) VALUES (?, ?, ?)
+  `).run(id, magazineName, userId);
 
   return {
     id,
     magazineName,
+    userId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     isActive: 1
@@ -138,6 +167,13 @@ export function deleteSession(sessionId) {
   db.prepare('DELETE FROM items WHERE session_id = ?').run(sessionId);
   db.prepare('DELETE FROM messages WHERE session_id = ?').run(sessionId);
   db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+}
+
+// Get the user_id that owns a session
+export function getSessionUserId(sessionId) {
+  const db = getDb();
+  const session = db.prepare('SELECT user_id as userId FROM sessions WHERE id = ?').get(sessionId);
+  return session ? session.userId : null;
 }
 
 // Clear session history but keep the session
