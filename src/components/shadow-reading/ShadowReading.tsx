@@ -168,6 +168,103 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     resetFillBlankState();
   }, [resetFillBlankState]);
 
+  const handleLetterInput = useCallback((
+    wordIndex: number,
+    charIndex: number,
+    value: string,
+    inputRefs: React.MutableRefObject<Map<string, HTMLInputElement>>
+  ) => {
+    if (!blankData) return;
+
+    const word = blankData.words[wordIndex];
+    const cleanWord = word.replace(/[^a-zA-Z'-]/g, '');
+    const letter = value.toLowerCase().slice(-1); // take last char for safety
+
+    setBlankInputs(prev => {
+      const next = new Map(prev);
+      const arr = [...(next.get(wordIndex) || [])];
+      arr[charIndex] = letter;
+      next.set(wordIndex, arr);
+
+      // Check if this word is now fully correct
+      const isWordCorrect = arr.every((ch, i) =>
+        ch.toLowerCase() === cleanWord[i].toLowerCase()
+      );
+
+      if (isWordCorrect) {
+        setBlankValidation(prevVal => {
+          const vNext = new Map(prevVal);
+          vNext.set(wordIndex, arr.map(() => 'correct' as const));
+          return vNext;
+        });
+
+        // Check if ALL words are correct
+        const allCorrect = [...blankData.blankedIndices].every(idx => {
+          if (idx === wordIndex) return true; // this one just completed
+          const w = blankData.words[idx].replace(/[^a-zA-Z'-]/g, '');
+          const inputs = next.get(idx) || [];
+          return inputs.every((ch, i) => ch.toLowerCase() === w[i].toLowerCase());
+        });
+
+        if (allCorrect) {
+          setShowSuccess(true);
+          successTimerRef.current = setTimeout(() => {
+            advanceNext();
+          }, 1500);
+        }
+      } else {
+        // Update per-character validation
+        setBlankValidation(prevVal => {
+          const vNext = new Map(prevVal);
+          vNext.set(wordIndex, arr.map((ch, i) => {
+            if (!ch) return 'empty' as const;
+            return ch.toLowerCase() === cleanWord[i].toLowerCase()
+              ? 'correct' as const
+              : 'wrong' as const;
+          }));
+          return vNext;
+        });
+      }
+
+      return next;
+    });
+
+    // Auto-focus next input
+    if (charIndex < cleanWord.length - 1) {
+      const nextKey = `${wordIndex}-${charIndex + 1}`;
+      inputRefs.current.get(nextKey)?.focus();
+    }
+  }, [blankData, advanceNext]);
+
+  const handleLetterKeydown = useCallback((
+    wordIndex: number,
+    charIndex: number,
+    e: React.KeyboardEvent,
+    inputRefs: React.MutableRefObject<Map<string, HTMLInputElement>>
+  ) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const currentInputs = blankInputs.get(wordIndex) || [];
+      if (!currentInputs[charIndex] && charIndex > 0) {
+        // Current input is empty, move to previous and clear it
+        const prevKey = `${wordIndex}-${charIndex - 1}`;
+        inputRefs.current.get(prevKey)?.focus();
+        setBlankInputs(prev => {
+          const next = new Map(prev);
+          const arr = [...(next.get(wordIndex) || [])];
+          arr[charIndex - 1] = '';
+          next.set(wordIndex, arr);
+          return next;
+        });
+      }
+    } else if (e.key === 'Space') {
+      // Space in fill-blank mode: exit and advance
+      e.preventDefault();
+      exitFillBlank();
+      advanceNext();
+    }
+  }, [blankInputs, exitFillBlank, advanceNext]);
+
   useEffect(() => {
     advanceRef.current = advanceNext;
   }, [advanceNext, advanceRef]);
