@@ -246,7 +246,11 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
         const nextInputs = nextWordIdx === wordIndex ? newArr : (blankInputs.get(nextWordIdx) || []);
         const isNextDone = nextInputs.every((ch, i) => ch.toLowerCase() === nextWord[i].toLowerCase());
         if (!isNextDone) {
-          inputRefs.current.get(`${nextWordIdx}-0`)?.focus();
+          const targetKey = `${nextWordIdx}-0`;
+          // Small delay to ensure state update has flushed
+          setTimeout(() => {
+            inputRefs.current.get(targetKey)?.focus();
+          }, 10);
           break;
         }
       }
@@ -389,10 +393,17 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     if (sortedIndices.length === 0) return;
     const firstWordIdx = sortedIndices[0];
     const firstInputKey = `${firstWordIdx}-0`;
-    // Delay to ensure DOM has rendered the inputs
-    const timer = setTimeout(() => {
-      inputRefsMap.current.get(firstInputKey)?.focus();
-    }, 50);
+    // Retry until the input element is mounted (up to 500ms)
+    let attempts = 0;
+    const tryFocus = () => {
+      const el = inputRefsMap.current.get(firstInputKey);
+      if (el) {
+        el.focus();
+      } else if (attempts++ < 10) {
+        setTimeout(tryFocus, 50);
+      }
+    };
+    const timer = setTimeout(tryFocus, 50);
     return () => clearTimeout(timer);
   }, [mode, blankData]);
 
