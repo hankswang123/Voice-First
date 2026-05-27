@@ -1,5 +1,25 @@
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import styles from './ShadowReading.module.css';
+
+function selectWordsToBlank(sentence: string): {
+  blankedIndices: Set<number>;
+  words: string[];
+} {
+  const words = sentence.split(/\s+/);
+  const eligible = words
+    .map((w, i) => ({ word: w, index: i }))
+    .filter(({ word }) => word.replace(/[^a-zA-Z'-]/g, '').length > 2);
+
+  const blankCount = Math.min(
+    eligible.length,
+    Math.max(1, Math.floor(eligible.length * 0.4))
+  );
+
+  const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+  const blankedIndices = new Set(shuffled.slice(0, blankCount).map(e => e.index));
+
+  return { blankedIndices, words };
+}
 
 interface ShadowReadingProps {
   audioCaptions: Array<{ time: number; text: string }>;
@@ -24,6 +44,15 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
   const [isWaiting, setIsWaiting] = React.useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeItemRef = useRef<HTMLDivElement | null>(null);
+  const [mode, setMode] = useState<'sequential' | 'fillBlank'>('sequential');
+  const [blankData, setBlankData] = useState<{
+    blankedIndices: Set<number>;
+    words: string[];
+  } | null>(null);
+  const [blankInputs, setBlankInputs] = useState<Map<number, string[]>>(new Map());
+  const [blankValidation, setBlankValidation] = useState<Map<number, ('correct' | 'wrong' | 'empty')[]>>(new Map());
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const englishCaptions = useMemo(() => {
     const hasLatin = /[a-zA-Z]/;
@@ -38,10 +67,23 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     }
   }, []);
 
+  const resetFillBlankState = useCallback(() => {
+    setMode('sequential');
+    setBlankData(null);
+    setBlankInputs(new Map());
+    setBlankValidation(new Map());
+    setShowSuccess(false);
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+  }, []);
+
   const startSentence = useCallback((index: number) => {
     const audio = audioRef.current;
     if (!audio || index >= englishCaptions.length) return;
 
+    resetFillBlankState();
     clearAutoPause();
     currentIndexRef.current = index;
     setDisplayIndex(index);
@@ -60,7 +102,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
         setIsWaiting(true);
       }, duration * 1000);
     }
-  }, [audioRef, englishCaptions, playbackRate, clearAutoPause]);
+  }, [audioRef, englishCaptions, playbackRate, clearAutoPause, resetFillBlankState]);
 
   const advanceNext = useCallback(() => {
     const nextIndex = currentIndexRef.current + 1;
@@ -70,6 +112,61 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     }
     startSentence(nextIndex);
   }, [englishCaptions.length, onExit, startSentence]);
+
+  const replaySentence = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Cancel any pending auto-pause
+    clearAutoPause();
+    isWaitingRef.current = false;
+    setIsWaiting(false);
+
+    const idx = currentIndexRef.current;
+    audio.currentTime = englishCaptions[idx].time;
+    audio.play().catch(() => {});
+
+    const nextCaption = englishCaptions[idx + 1];
+    if (nextCaption) {
+      const duration = (nextCaption.time - englishCaptions[idx].time) / playbackRate;
+      timeoutRef.current = setTimeout(() => {
+        audio.pause();
+        isWaitingRef.current = true;
+        setIsWaiting(true);
+      }, duration * 1000);
+    }
+  }, [audioRef, englishCaptions, playbackRate, clearAutoPause]);
+
+  const enterFillBlank = useCallback(() => {
+    const idx = currentIndexRef.current;
+    const text = englishCaptions[idx].text;
+    const { blankedIndices, words } = selectWordsToBlank(text);
+
+    setBlankData({ blankedIndices, words });
+
+    // Initialize input state: one string per blanked word
+    const inputs = new Map<number, string[]>();
+    blankedIndices.forEach(i => {
+      inputs.set(i, new Array(words[i].replace(/[^a-zA-Z'-]/g, '').length).fill(''));
+    });
+    setBlankInputs(inputs);
+    setBlankValidation(new Map());
+    setShowSuccess(false);
+    setMode('fillBlank');
+
+    // Pause audio if playing
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      audio.pause();
+    }
+    clearAutoPause();
+    isWaitingRef.current = false;
+    setIsWaiting(false);
+  }, [audioRef, englishCaptions, clearAutoPause]);
+
+  const exitFillBlank = useCallback(() => {
+    resetFillBlankState();
+  }, [resetFillBlankState]);
 
   useEffect(() => {
     advanceRef.current = advanceNext;
@@ -84,6 +181,10 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
     return () => {
       clearAutoPause();
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+        successTimerRef.current = null;
+      }
     };
   }, [isActive, startSentence, clearAutoPause]);
 
