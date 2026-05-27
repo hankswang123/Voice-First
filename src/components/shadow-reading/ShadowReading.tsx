@@ -381,54 +381,55 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
           >
             {i === displayIndex && isFillBlankMode && blankData ? (
               <div className={styles.fillBlankContainer}>
-                {words.map((word, wi) => (
-                  <React.Fragment key={wi}>
-                    {blankData.blankedIndices.has(wi) ? (
-                      (() => {
-                        const clean = word.replace(/[^a-zA-Z'-]/g, '');
-                        const letterInputs = blankInputs.get(wi) || [];
-                        const validation = blankValidation.get(wi) || [];
-                        const wordCorrect = validation.length > 0 && validation.every(v => v === 'correct');
-                        return (
-                          <span className={`${styles.fillBlankWord} ${wordCorrect ? 'correct' : ''}`}>
-                            {clean.split('').map((_, ci) => {
-                              const key = `${wi}-${ci}`;
-                              const val = letterInputs[ci] || '';
-                              const state = validation[ci] || 'empty';
-                              return (
-                                <span key={ci} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
-                                  <input
-                                    ref={(el) => {
-                                      if (el) inputRefsMap.current.set(key, el);
-                                    }}
-                                    className={`${styles.fillBlankInput} ${
-                                      state === 'correct' ? styles.correct :
-                                      state === 'wrong' ? styles.wrong : ''
-                                    }`}
-                                    type="text"
-                                    maxLength={1}
-                                    value={val}
-                                    onChange={(e) => handleLetterInput(wi, ci, e.target.value, inputRefsMap)}
-                                    onKeyDown={(e) => handleLetterKeydown(wi, ci, e, inputRefsMap)}
-                                    autoComplete="off"
-                                    autoCapitalize="off"
-                                    spellCheck={false}
-                                  />
-                                  <span className={styles.fillBlankWrongX}>
-                                    {state === 'wrong' ? '×' : ''}
-                                  </span>
-                                </span>
-                              );
-                            })}
-                          </span>
-                        );
-                      })()
-                    ) : (
+                {words.map((word, wi) => {
+                  const isLast = wi === words.length - 1;
+                  const spacer = isLast ? '' : ' ';
+                  if (blankData.blankedIndices.has(wi)) {
+                    const clean = word.replace(/[^a-zA-Z'-]/g, '');
+                    const letterInputs = blankInputs.get(wi) || [];
+                    const validation = blankValidation.get(wi) || [];
+                    const wordCorrect = validation.length > 0 && validation.every(v => v === 'correct');
+                    return (
+                      <span key={wi} className={`${styles.fillBlankWord} ${wordCorrect ? 'correct' : ''}`} style={{ marginRight: spacer ? '0.35em' : undefined }}>
+                        {clean.split('').map((_, ci) => {
+                          const key = `${wi}-${ci}`;
+                          const val = letterInputs[ci] || '';
+                          const state = validation[ci] || 'empty';
+                          return (
+                            <span key={ci} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <input
+                                ref={(el) => {
+                                  if (el) inputRefsMap.current.set(key, el);
+                                }}
+                                className={`${styles.fillBlankInput} ${
+                                  state === 'correct' ? styles.correct :
+                                  state === 'wrong' ? styles.wrong : ''
+                                }`}
+                                type="text"
+                                maxLength={1}
+                                value={val}
+                                onChange={(e) => handleLetterInput(wi, ci, e.target.value, inputRefsMap)}
+                                onKeyDown={(e) => handleLetterKeydown(wi, ci, e, inputRefsMap)}
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
+                              />
+                              <span className={styles.fillBlankWrongX}>
+                                {state === 'wrong' ? '×' : ''}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={wi} style={{ whiteSpace: 'pre' }}>
                       <span className={styles.fillBlankStatic}>{word}</span>
-                    )}
-                    {wi < words.length - 1 && ' '}
-                  </React.Fragment>
-                ))}
+                      {spacer}
+                    </span>
+                  );
+                })}
                 {showSuccess && (
                   <div className={styles.successOverlay}>
                     <span className={styles.successCheck}>{'✓'}</span>
