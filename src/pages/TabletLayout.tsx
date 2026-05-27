@@ -28,7 +28,8 @@ import { RealtimeClient, type ItemType } from '../lib/realtime/index.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload } from 'react-feather';
+import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut } from 'react-feather';
+import { useAuth } from '../contexts/AuthContext';
 
 import './style/TabletLayout.scss';
 
@@ -59,6 +60,7 @@ interface RealtimeEvent {
 }
 
 export function TabletLayout() {
+  const { user, logout } = useAuth();
   /**
    * Ask user for API Key
    * If we're using the local relay server, we don't need this
@@ -3945,7 +3947,13 @@ export function TabletLayout() {
         {/*<Zap onClick={ isConnected ? disConnnectRealtimeAPI : connnectRealtimeAPI } style={{ display: isConnected ? "none" : "flex", marginRight: "1px", marginLeft: "auto", justifyContent: "flex-end", zIndex: '9999', userSelect: 'none', cursor: "pointer" }}/>      */}
         {/*Settings for AI assistant and Realtime API*/} 
         {/*<div style={{display:"flex", marginRight: "0px", marginLeft: isConnected ? "auto" : "1px", justifyContent: "flex-end", zIndex: '9999', userSelect: 'none' }}>            */} 
-        <div style={{display:"flex", marginRight: "0px", marginLeft: "auto", justifyContent: "flex-end", zIndex: '9999', userSelect: 'none' }}>            
+        <div style={{display:"flex", marginRight: "0px", marginLeft: "auto", justifyContent: "flex-end", zIndex: '9999', userSelect: 'none' }}>
+          {user && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '12px', fontSize: '13px', color: '#666' }}>
+              <span>{user.displayName || user.email}</span>
+              <LogOut style={{ width: '16px', height: '16px', cursor: 'pointer', color: '#999' }} onClick={logout} title="Logout" />
+            </div>
+          )}
           <div title='Realtime Session Countdown' style={{ fontSize: '1em', userSelect: 'none', marginRight: '7px' }}><><CountdownTimer startTime={30} /> </></div>      
           <div></div>
           <div className="setting-container" style={{display: "flex"}}>
