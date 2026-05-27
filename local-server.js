@@ -20,6 +20,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import authRoutes from './routes/auth.js';
+import chatRoutes from './routes/chat.js';
+import { initAuthSchema } from './db/auth.js';
+
 // Chat history database (optional - may fail on some platforms)
 let chatDb = null;
 let dbAvailable = false;
@@ -31,6 +35,16 @@ try {
 } catch (error) {
   console.warn('Chat history database not available:', error.message);
   console.warn('Chat history features will be disabled');
+}
+
+// Initialize auth schema
+if (dbAvailable) {
+  try {
+    initAuthSchema();
+    console.log('Auth schema initialized');
+  } catch (error) {
+    console.warn('Auth schema initialization failed:', error.message);
+  }
 }
 
 //Get the directory name
@@ -50,8 +64,8 @@ if (fs.existsSync(buildPath)) {
 
 // CORS settings
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://hankswang123.github.io/Audio-Copilot/'], // React app URL
-    methods: ['GET', 'POST', 'OPTIONS'],
+    origin: ['http://localhost:3000', 'https://hankswang123.github.io/Audio-Copilot/'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -750,134 +764,11 @@ const requireDb = (res) => {
   return true;
 };
 
-// List all sessions (optional ?magazine= filter)
-app.get("/api/chat/sessions", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { magazine } = req.query;
-    const sessions = chatDb.listSessions(magazine || null);
-    res.json({ sessions });
-  } catch (error) {
-    console.error("Error listing sessions:", error);
-    res.status(500).json({ error: 'Failed to list sessions', details: error.message });
-  }
-});
+// Auth routes (public)
+app.use('/api/auth', authRoutes);
 
-// Get or create active session for a magazine
-app.get("/api/chat/sessions/:magazine", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { magazine } = req.params;
-    const session = chatDb.getOrCreateSession(magazine);
-    res.json(session);
-  } catch (error) {
-    console.error("Error getting/creating session:", error);
-    res.status(500).json({ error: 'Failed to get/create session', details: error.message });
-  }
-});
-
-// Delete a session
-app.delete("/api/chat/sessions/:sessionId", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    chatDb.deleteSession(sessionId);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting session:", error);
-    res.status(500).json({ error: 'Failed to delete session', details: error.message });
-  }
-});
-
-// Clear session history (but keep session)
-app.post("/api/chat/sessions/:sessionId/clear", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    chatDb.clearSession(sessionId);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error clearing session:", error);
-    res.status(500).json({ error: 'Failed to clear session', details: error.message });
-  }
-});
-
-// Get all messages for a session
-app.get("/api/chat/sessions/:sessionId/messages", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    const messages = chatDb.getMessages(sessionId);
-    res.json({ messages });
-  } catch (error) {
-    console.error("Error getting messages:", error);
-    res.status(500).json({ error: 'Failed to get messages', details: error.message });
-  }
-});
-
-// Add a message to a session
-app.post("/api/chat/sessions/:sessionId/messages", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    const { role, text } = req.body;
-
-    if (!role || text === undefined) {
-      return res.status(400).json({ error: 'Missing required fields: role and text' });
-    }
-
-    const message = chatDb.addMessage(sessionId, role, text);
-    res.json(message);
-  } catch (error) {
-    console.error("Error adding message:", error);
-    res.status(500).json({ error: 'Failed to add message', details: error.message });
-  }
-});
-
-// Get all items for a session
-app.get("/api/chat/sessions/:sessionId/items", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    const items = chatDb.getItems(sessionId);
-    res.json({ items });
-  } catch (error) {
-    console.error("Error getting items:", error);
-    res.status(500).json({ error: 'Failed to get items', details: error.message });
-  }
-});
-
-// Add an item to a session
-app.post("/api/chat/sessions/:sessionId/items", (req, res) => {
-  if (!requireDb(res)) return;
-  try {
-    const { sessionId } = req.params;
-    const item = req.body;
-
-    if (!item.id) {
-      return res.status(400).json({ error: 'Missing required field: id' });
-    }
-
-    // Debug logging - see what data arrives at server
-    console.log('[ChatHistory Server] Received item:', {
-      id: item.id,
-      role: item.role,
-      status: item.status,
-      hasAudio: !!item.formattedAudio,
-      audioLength: item.formattedAudio?.length || 0,
-      hasFileData: !!item.formattedFileData,
-      fileDataLength: item.formattedFileData?.length || 0,
-      hasTranscript: !!item.formattedTranscript,
-      transcript: item.formattedTranscript?.substring(0, 30)
-    });
-
-    const savedItem = chatDb.addItem(sessionId, item);
-    res.json(savedItem);
-  } catch (error) {
-    console.error("Error adding item:", error);
-    res.status(500).json({ error: 'Failed to add item', details: error.message });
-  }
-});
+// Chat routes (authenticated)
+app.use('/api/chat', chatRoutes);
 
 // SPA fallback (Express 5 safe): only handle GET navigation requests not starting with /api
 app.use((req, res, next) => {
