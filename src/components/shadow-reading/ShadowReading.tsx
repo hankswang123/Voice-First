@@ -179,32 +179,35 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
     const word = blankData.words[wordIndex];
     const cleanWord = word.replace(/[^a-zA-Z'-]/g, '');
-    const letter = value.toLowerCase().slice(-1); // take last char for safety
+    const letter = value.toLowerCase().slice(-1);
+
+    // Compute what the updated inputs will look like
+    const currentArr = blankInputs.get(wordIndex) || [];
+    const newArr = [...currentArr];
+    newArr[charIndex] = letter;
+
+    // Check if this word is now fully correct
+    const isWordCorrect = newArr.every((ch, i) =>
+      ch.toLowerCase() === cleanWord[i].toLowerCase()
+    );
+
+    // Check if ALL words are correct (using the prospective new array)
+    const allCorrect = [...blankData.blankedIndices].every(idx => {
+      if (idx === wordIndex) return true;
+      const w = blankData.words[idx].replace(/[^a-zA-Z'-]/g, '');
+      const inputs = idx === wordIndex ? newArr : (blankInputs.get(idx) || []);
+      return inputs.every((ch, i) => ch.toLowerCase() === w[i].toLowerCase());
+    });
 
     setBlankInputs(prev => {
       const next = new Map(prev);
-      const arr = [...(next.get(wordIndex) || [])];
-      arr[charIndex] = letter;
-      next.set(wordIndex, arr);
-
-      // Check if this word is now fully correct
-      const isWordCorrect = arr.every((ch, i) =>
-        ch.toLowerCase() === cleanWord[i].toLowerCase()
-      );
+      next.set(wordIndex, newArr);
 
       if (isWordCorrect) {
         setBlankValidation(prevVal => {
           const vNext = new Map(prevVal);
-          vNext.set(wordIndex, arr.map(() => 'correct' as const));
+          vNext.set(wordIndex, newArr.map(() => 'correct' as const));
           return vNext;
-        });
-
-        // Check if ALL words are correct
-        const allCorrect = [...blankData.blankedIndices].every(idx => {
-          if (idx === wordIndex) return true; // this one just completed
-          const w = blankData.words[idx].replace(/[^a-zA-Z'-]/g, '');
-          const inputs = next.get(idx) || [];
-          return inputs.every((ch, i) => ch.toLowerCase() === w[i].toLowerCase());
         });
 
         if (allCorrect) {
@@ -214,10 +217,9 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
           }, 1500);
         }
       } else {
-        // Update per-character validation
         setBlankValidation(prevVal => {
           const vNext = new Map(prevVal);
-          vNext.set(wordIndex, arr.map((ch, i) => {
+          vNext.set(wordIndex, newArr.map((ch, i) => {
             if (!ch) return 'empty' as const;
             return ch.toLowerCase() === cleanWord[i].toLowerCase()
               ? 'correct' as const
@@ -234,8 +236,22 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     if (charIndex < cleanWord.length - 1) {
       const nextKey = `${wordIndex}-${charIndex + 1}`;
       inputRefs.current.get(nextKey)?.focus();
+    } else if (isWordCorrect && !allCorrect) {
+      // Word completed — jump to next blanked word's first input
+      const sortedIndices = [...blankData.blankedIndices].sort((a, b) => a - b);
+      const currentPos = sortedIndices.indexOf(wordIndex);
+      for (let j = currentPos + 1; j < sortedIndices.length; j++) {
+        const nextWordIdx = sortedIndices[j];
+        const nextWord = blankData.words[nextWordIdx].replace(/[^a-zA-Z'-]/g, '');
+        const nextInputs = nextWordIdx === wordIndex ? newArr : (blankInputs.get(nextWordIdx) || []);
+        const isNextDone = nextInputs.every((ch, i) => ch.toLowerCase() === nextWord[i].toLowerCase());
+        if (!isNextDone) {
+          inputRefs.current.get(`${nextWordIdx}-0`)?.focus();
+          break;
+        }
+      }
     }
-  }, [blankData, advanceNext]);
+  }, [blankData, blankInputs, advanceNext]);
 
   const handleLetterKeydown = useCallback((
     wordIndex: number,
@@ -246,7 +262,16 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     if (e.key === 'Backspace') {
       e.preventDefault();
       const currentInputs = blankInputs.get(wordIndex) || [];
-      if (!currentInputs[charIndex] && charIndex > 0) {
+      if (currentInputs[charIndex]) {
+        // Current input has a letter — clear it and stay
+        setBlankInputs(prev => {
+          const next = new Map(prev);
+          const arr = [...(next.get(wordIndex) || [])];
+          arr[charIndex] = '';
+          next.set(wordIndex, arr);
+          return next;
+        });
+      } else if (charIndex > 0) {
         // Current input is empty, move to previous and clear it
         const prevKey = `${wordIndex}-${charIndex - 1}`;
         inputRefs.current.get(prevKey)?.focus();
@@ -356,6 +381,20 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     if (!activeItemRef.current) return;
     activeItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [displayIndex]);
+
+  // Auto-focus first blank input when entering fill-blank mode
+  useEffect(() => {
+    if (mode !== 'fillBlank' || !blankData) return;
+    const sortedIndices = [...blankData.blankedIndices].sort((a, b) => a - b);
+    if (sortedIndices.length === 0) return;
+    const firstWordIdx = sortedIndices[0];
+    const firstInputKey = `${firstWordIdx}-0`;
+    // Delay to ensure DOM has rendered the inputs
+    const timer = setTimeout(() => {
+      inputRefsMap.current.get(firstInputKey)?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [mode, blankData]);
 
   if (!isActive) return null;
 
