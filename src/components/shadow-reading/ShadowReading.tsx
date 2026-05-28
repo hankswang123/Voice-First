@@ -93,17 +93,8 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
     audio.currentTime = englishCaptions[index].time;
     audio.play().catch(() => {});
-
-    const nextCaption = englishCaptions[index + 1];
-    if (nextCaption) {
-      const duration = (nextCaption.time - englishCaptions[index].time) / playbackRate;
-      timeoutRef.current = setTimeout(() => {
-        audio.pause();
-        isWaitingRef.current = true;
-        setIsWaiting(true);
-      }, duration * 1000);
-    }
-  }, [audioRef, englishCaptions, playbackRate, clearAutoPause, resetFillBlankState]);
+    // Pause at next caption is handled by handleTimeUpdate — no duplicate timeout needed
+  }, [audioRef, englishCaptions, clearAutoPause, resetFillBlankState]);
 
   const advanceNext = useCallback(() => {
     const nextIndex = currentIndexRef.current + 1;
@@ -118,9 +109,13 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
+      isWaitingRef.current = false;
+      setIsWaiting(false);
       audio.play().catch(() => {});
     } else {
       audio.pause();
+      isWaitingRef.current = true;
+      setIsWaiting(true);
     }
   }, [audioRef]);
 
@@ -128,7 +123,6 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Cancel any pending auto-pause
     clearAutoPause();
     isWaitingRef.current = false;
     setIsWaiting(false);
@@ -136,17 +130,8 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     const idx = currentIndexRef.current;
     audio.currentTime = englishCaptions[idx].time;
     audio.play().catch(() => {});
-
-    const nextCaption = englishCaptions[idx + 1];
-    if (nextCaption) {
-      const duration = (nextCaption.time - englishCaptions[idx].time) / playbackRate;
-      timeoutRef.current = setTimeout(() => {
-        audio.pause();
-        isWaitingRef.current = true;
-        setIsWaiting(true);
-      }, duration * 1000);
-    }
-  }, [audioRef, englishCaptions, playbackRate, clearAutoPause]);
+    // Pause at next caption is handled by handleTimeUpdate
+  }, [audioRef, englishCaptions, clearAutoPause]);
 
   const enterFillBlank = useCallback(() => {
     const idx = currentIndexRef.current;
@@ -366,22 +351,9 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
   useEffect(() => {
     if (!isActive) return;
+    // Clear stale timeout when playback rate changes — handleTimeUpdate handles pausing
     clearAutoPause();
-
-    const audio = audioRef.current;
-    if (!audio || isWaitingRef.current) return;
-
-    const idx = currentIndexRef.current;
-    const nextCaption = englishCaptions[idx + 1];
-    if (nextCaption && !audio.paused) {
-      const remaining = (nextCaption.time - audio.currentTime) / playbackRate;
-      timeoutRef.current = setTimeout(() => {
-        audio.pause();
-        isWaitingRef.current = true;
-        setIsWaiting(true);
-      }, remaining * 1000);
-    }
-  }, [playbackRate, isActive, audioRef, englishCaptions, clearAutoPause]);
+  }, [playbackRate, isActive, clearAutoPause]);
 
   useEffect(() => {
     if (!activeItemRef.current) return;
