@@ -114,6 +114,16 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     startSentence(nextIndex);
   }, [englishCaptions.length, onExit, startSentence]);
 
+  const togglePlayPause = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [audioRef]);
+
   const replaySentence = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -485,6 +495,9 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
               <div className={styles.toolbar}>
                 <button className={styles.toolbarBtn} onClick={replaySentence}>
                   {'↻'} Repeat
+                </button>
+                <button className={styles.toolbarBtn} onClick={togglePlayPause}>
+                  {isWaiting ? '▶' : '⏸'}
                 </button>
                 {!isFillBlankMode && (
                   <button className={styles.toolbarBtn} onClick={enterFillBlank}>
