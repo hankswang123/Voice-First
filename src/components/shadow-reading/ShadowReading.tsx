@@ -154,16 +154,8 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     setBlankValidation(new Map());
     setShowSuccess(false);
     setMode('fillBlank');
-
-    // Pause audio if playing
-    const audio = audioRef.current;
-    if (audio && !audio.paused) {
-      audio.pause();
-    }
-    clearAutoPause();
-    isWaitingRef.current = false;
-    setIsWaiting(false);
-  }, [audioRef, englishCaptions, clearAutoPause]);
+    // Audio keeps playing — fill-blank works in parallel with hearing
+  }, [englishCaptions]);
 
   const exitFillBlank = useCallback(() => {
     resetFillBlankState();
@@ -489,14 +481,16 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
             ) : (
               caption.text
             )}
-            {i === displayIndex && isWaiting && !isFillBlankMode && (
+            {i === displayIndex && (
               <div className={styles.toolbar}>
                 <button className={styles.toolbarBtn} onClick={replaySentence}>
                   {'↻'} Repeat
                 </button>
-                <button className={styles.toolbarBtn} onClick={enterFillBlank}>
-                  {'✎'} Fill Blank
-                </button>
+                {!isFillBlankMode && (
+                  <button className={styles.toolbarBtn} onClick={enterFillBlank}>
+                    {'✎'} Fill Blank
+                  </button>
+                )}
               </div>
             )}
           </div>
