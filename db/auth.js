@@ -199,3 +199,27 @@ export function deleteAllRefreshTokens(userId) {
   const db = getDb();
   db.prepare('DELETE FROM refresh_tokens WHERE user_id = ?').run(userId);
 }
+
+// ==================== SEED ====================
+
+export async function seedUsers() {
+  const db = getDb();
+
+  const existing = db.prepare('SELECT COUNT(*) as count FROM users').get();
+  if (existing.count > 0) return;
+
+  const adminHash = await bcrypt.hash('admin123', BCRYPT_ROUNDS);
+  const testHash = await bcrypt.hash('test1234', BCRYPT_ROUNDS);
+
+  db.prepare(`
+    INSERT INTO users (id, email, password_hash, display_name, role, email_verified)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(uuidv4(), 'admin@voice-first.app', adminHash, 'Admin', 'admin', 1);
+
+  db.prepare(`
+    INSERT INTO users (id, email, password_hash, display_name, role, email_verified)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(uuidv4(), 'test@voice-first.app', testHash, 'Test User', 'user', 1);
+
+  console.log('[SEED] Created default users: admin@voice-first.app / admin123, test@voice-first.app / test1234');
+}

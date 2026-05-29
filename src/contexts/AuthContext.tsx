@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(data => setUser(data.user))
       .catch(() => { localStorage.removeItem('refreshToken'); setRefreshToken(null); })
       .finally(() => setIsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh before expiry (14 min)
@@ -59,7 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch { logout(); }
     }, 14 * 60 * 1000);
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, refreshToken]);
 
   const login = useCallback(async (email: string, password: string) => {

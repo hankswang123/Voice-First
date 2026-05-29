@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
-import { initAuthSchema } from './db/auth.js';
+import { initAuthSchema, seedUsers } from './db/auth.js';
 
 // Chat history database (optional - may fail on some platforms)
 let chatDb = null;
@@ -41,6 +41,7 @@ try {
 if (dbAvailable) {
   try {
     initAuthSchema();
+    await seedUsers();
     console.log('Auth schema initialized');
   } catch (error) {
     console.warn('Auth schema initialization failed:', error.message);
