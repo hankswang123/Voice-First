@@ -50,17 +50,19 @@ type MessageProps = {
 
 const UserMessage = ({ text }: { text: string }) => {
 
+  if (!text) return null;
+
   const preprocessText = (text: string) => {
 
     if (text.includes('Read Aloud:') || text.includes('Translate:') || text.includes('wordcard:') || text.includes('SyntaxAnalyze:')) {
       //return 'Describe Selection';
       return '';
-    }  
-    return text;    
-  }; 
+    }
+    return text;
+  };
 
   //If screenshot image URL passed in, show the image directly by <img> tag
-  const messageType = text.includes('data:image/png;base64,') ? 'image' : 'text'; 
+  const messageType = text.includes('data:image/png;base64,') ? 'image' : 'text';
 
   switch (messageType) {
     case "text":
@@ -118,6 +120,7 @@ const StructPrompt = ({ prompt }: { prompt: string }) => {
 };
 
 const AssistantMessage = ({ text }: { text: string }) => {
+  if (!text) return null;
   const [showPrompt, setShowPrompt] = useState(false);
   const preprocessText = (text: string) => {
     if (!text.includes('<iframe') && !text.includes('</iframe>')) {
