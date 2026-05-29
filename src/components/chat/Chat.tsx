@@ -27,15 +27,7 @@ if (apiKey === '') {
 
 //tbd: assistant creation when the existing assistant is not available
 //const assistantId = ""; // indicate the new assistant to not alter or transform HTML content when including <iframe>
-let assistantId = localStorage.getItem('tmp::asst_id');
-if (assistantId === null) {
-  assistantId = prompt('Assistant Id needed');
-  if (assistantId === null) {
-    throw new Error('Assistant Id is required');
-  } else {  
-    localStorage.setItem('tmp::asst_id', assistantId);
-  }  
-}
+let assistantId = localStorage.getItem('tmp::asst_id') || '';
 
 export const openai = new OpenAI({
   apiKey: apiKey, 

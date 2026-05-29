@@ -19,7 +19,7 @@
     "react-feather": "^2.0.10",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.1.0",
-    "react-router-dom": "^7.15.1",
+    "react-router-dom": "^7.16.0",
     "rehype-raw": "^7.0.0",
     "uuid": "^13.0.0",
     "ws": "^8.18.3",

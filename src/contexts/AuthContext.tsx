@@ -32,6 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Auto-refresh token on mount
   useEffect(() => {
+    // Dev auto-login: skip auth on localhost
+    if (window.location.hostname === 'localhost') {
+      authApi.login('judy@voice-first.app', 'judy1234')
+        .then(data => {
+          setAccessToken(data.accessToken!);
+          setRefreshToken(data.refreshToken!);
+          localStorage.setItem('refreshToken', data.refreshToken!);
+          setUser(data.user!);
+        })
+        .catch(() => setIsLoading(false))
+        .finally(() => setIsLoading(false));
+      return;
+    }
+
     if (!refreshToken) { setIsLoading(false); return; }
 
     authApi.refresh(refreshToken)

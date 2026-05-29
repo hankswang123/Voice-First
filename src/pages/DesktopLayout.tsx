@@ -4062,7 +4062,7 @@ export function DesktopLayout() {
           </div>               
           <div className='magzine-title' style={{height: '25px', justifyContent: 'center', marginLeft: 'auto', marginRight: 'auto', userSelect: 'none'}}><img id='imgRecraft' src='./resource/ngl.png' width="70px" height="20px" style={{marginRight: "5px"}}></img>{newMagzine}
           </div>                    
-          <div className="right-buttons" style={{userSelect: 'none'}}>
+          <div className="right-buttons" style={{userSelect: 'none', display: 'flex', alignItems: 'center', gap: '8px'}}>
             {/*<div style={{ fontSize: '1em' }}>{isConnected ? ( <> Copilot: <span className="highlightgreen">On</span> </> ) : (isMuteBtnDisabled ? startingText : (isConnectionError ? ( <><span className="highlightred">Error Occurred!</span></> ) : ( <> Copilot: <span className="highlightred">Off</span> </> )) )}</div> */}
             <div>
               <Button
@@ -4072,8 +4072,13 @@ export function DesktopLayout() {
                   //buttonStyle={isConnected ? 'regular' : 'action'}
                   disabled={isMuteBtnDisabled}
                   onClick={ isConnected ? disConnnectRealtimeAPI : connnectRealtimeAPI }
-                />    
-            </div>                     
+                />
+            </div>
+            {user && (
+              <div title="Logout" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={logout}>
+                <LogOut style={{ width: '18px', height: '18px', color: '#666' }} />
+              </div>
+            )}                     
             <div className="content-api-key" style={{display: 'none'}}>
               {!LOCAL_RELAY_SERVER_URL && (
                 <Button
@@ -4572,10 +4577,7 @@ export function DesktopLayout() {
         <div style={{display:"flex", marginRight: "0px", marginLeft: "auto", justifyContent: "flex-end", zIndex: '9999', userSelect: 'none' }}>
           {user && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '12px', fontSize: '13px', color: '#666' }}>
-              <span>{user.displayName || user.email}</span>
-              <div title="Logout" style={{ cursor: 'pointer' }}>
-                <LogOut style={{ width: '16px', height: '16px', color: '#999' }} onClick={logout} />
-              </div>
+              <span>Welcome, {user.displayName || user.email.split('@')[0]}!</span>
             </div>
           )}
           <div title='Realtime Session Countdown' style={{ fontSize: '1em', userSelect: 'none', marginRight: '7px' }}><><CountdownTimer startTime={30} /> </></div>      
