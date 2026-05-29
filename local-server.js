@@ -88,6 +88,98 @@ app.get("/api/magazines", (req, res) => {
   }
 });
 
+// ==================== MAGAZINE CONFIG (display status) ====================
+
+const MAGAZINE_CONFIG_PATH = path.join(__dirname, 'data', 'magazine-config.json');
+
+function loadMagazineConfig() {
+  try {
+    if (fs.existsSync(MAGAZINE_CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(MAGAZINE_CONFIG_PATH, 'utf-8'));
+    }
+  } catch (e) { console.warn('Failed to load magazine config:', e.message); }
+  return { magazines: {} };
+}
+
+function saveMagazineConfig(config) {
+  const dir = path.dirname(MAGAZINE_CONFIG_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(MAGAZINE_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+// Enriched magazine list with metadata for the management table
+app.get('/api/magazines/enriched', (req, res) => {
+  try {
+    const playDir = path.join(process.cwd(), 'public', 'play');
+    const entries = fs.readdirSync(playDir, { withFileTypes: true });
+    const config = loadMagazineConfig();
+    const magazines = entries
+      .filter(d => d.isDirectory())
+      .map(d => {
+        const dirPath = path.join(playDir, d.name);
+        const stat = fs.statSync(dirPath);
+        const hasAudio = ['.wav', '.mp3', '.m4a'].some(ext =>
+          fs.existsSync(path.join(dirPath, `${d.name}${ext}`))
+        );
+        const hasScripts = fs.existsSync(path.join(dirPath, 'audio_scripts.txt'));
+        const hasFlashcards = fs.existsSync(path.join(dirPath, 'flashcards.txt'));
+        const displayed = config.magazines[d.name]?.displayed ?? false;
+        return {
+          name: d.name,
+          uploadTime: stat.mtime.toISOString(),
+          hasAudio,
+          hasScripts,
+          hasFlashcards,
+          displayed
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ magazines });
+  } catch (e) {
+    console.error('Failed to list enriched magazines:', e);
+    res.status(500).json({ error: 'Failed to list enriched magazines' });
+  }
+});
+
+// List only displayed magazines for the floating quick-switch
+app.get('/api/magazines/displayed', (req, res) => {
+  try {
+    const playDir = path.join(process.cwd(), 'public', 'play');
+    const config = loadMagazineConfig();
+    const entries = fs.readdirSync(playDir, { withFileTypes: true });
+    const displayed = entries
+      .filter(d => d.isDirectory() && config.magazines[d.name]?.displayed)
+      .map(d => ({
+        name: d.name,
+        displayName: d.name.replace(/[_-]/g, ' ')
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ magazines: displayed });
+  } catch (e) {
+    console.error('Failed to list displayed magazines:', e);
+    res.status(500).json({ error: 'Failed to list displayed magazines' });
+  }
+});
+
+// Update display status for a magazine
+app.put('/api/magazines/:name/display', (req, res) => {
+  try {
+    const { name } = req.params;
+    const { displayed } = req.body;
+    if (typeof displayed !== 'boolean') {
+      return res.status(400).json({ error: 'displayed must be a boolean' });
+    }
+    const config = loadMagazineConfig();
+    if (!config.magazines[name]) config.magazines[name] = {};
+    config.magazines[name].displayed = displayed;
+    saveMagazineConfig(config);
+    res.json({ success: true, name, displayed });
+  } catch (e) {
+    console.error('Failed to update display status:', e);
+    res.status(500).json({ error: 'Failed to update display status' });
+  }
+});
+
 // ==================== MAGAZINE UPLOAD ENDPOINT ====================
 
 // Helper function to get unique directory name with suffix
@@ -242,6 +334,34 @@ app.get("/api/serp/videos", async (req, res) => {
     } catch (error) {
         console.error("Detailed error:", error);
         res.status(600).json({ error: 'Failed to fetch videos from youtube', details: error.message });
+    }
+});
+
+// Dictionary lookup - free API, no key required
+app.get("/api/dictionary/:word", async (req, res) => {
+    try {
+        const { word } = req.params;
+        const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        const entry = response.data[0];
+        const meanings = entry.meanings || [];
+        const result = {
+            word: entry.word,
+            phonetic: entry.phonetic || entry.phonetics?.find(p => p.text)?.text || '',
+            meanings: meanings.map(m => ({
+                partOfSpeech: m.partOfSpeech,
+                definitions: m.definitions.slice(0, 3).map(d => ({
+                    definition: d.definition,
+                    example: d.example || null
+                }))
+            }))
+        };
+        res.json(result);
+    } catch (error) {
+        if (error.response?.status === 404) {
+            res.status(404).json({ error: 'Word not found' });
+        } else {
+            res.status(500).json({ error: 'Dictionary lookup failed', details: error.message });
+        }
     }
 });
 

@@ -38,6 +38,8 @@ import Chat, {openai} from '../components/chat/Chat';
 import CountdownTimer from '../components/countdowntimer/CountdownTimer';
 import Flashcards from "../components/flashcards/Flashcards";
 import ShadowReading from "../components/shadow-reading/ShadowReading";
+import MagazineManager from "../components/MagazineManager/MagazineManager";
+import FloatingMagazineList from "../components/MagazineManager/FloatingMagazineList";
 import { Button } from '../components/button/Button';
 
 //import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -182,8 +184,24 @@ export function TabletLayout() {
   });
 
   const timeUpdateHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
+  const lastHighlightedWordRef = useRef<string>('');
+  const isSelectingCaptionRef = useRef(false);
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const [isLoop, setIsLoop] = useState(false);
+
+  // Magazine management state
+  const [showMagazineManager, setShowMagazineManager] = useState(false);
+  const [displayedMagazines, setDisplayedMagazines] = useState<{ name: string; displayName: string }[]>([]);
+
+  const fetchDisplayedMagazines = useCallback(async () => {
+    try {
+      const res = await fetch('/api/magazines/displayed');
+      const data = await res.json();
+      setDisplayedMagazines(data.magazines || []);
+    } catch (e) {
+      console.error('Failed to fetch displayed magazines:', e);
+    }
+  }, []);
 
   // Use absolute path for PDF so production build (served from /) resolves correctly.
   const [dynamicMagzines, setDynamicMagzines] = useState<string[]>([]);
@@ -225,6 +243,11 @@ export function TabletLayout() {
     setpdfFilePath1(`/play/${first}/${first}.pdf`);
     setaudioFilePath1(`/play/${first}/${first}.wav`);
   }, [dynamicMagzines]);
+
+  // Fetch displayed magazines for the floating quick-switch
+  useEffect(() => {
+    fetchDisplayedMagazines();
+  }, [fetchDisplayedMagazines]);
 
   const [audioFilePath1, setaudioFilePath1] = useState('');
   const [isAudioExisting, setIsAudioExisting] = useState(false);
@@ -661,91 +684,88 @@ export function TabletLayout() {
     await chatRef.current.updateChatModel(newModel);
   };
 
-  // Update PDF file path, audio file path and audio captions when a new magzine is selected
-  const handleSelectChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+  // Core magazine loading logic — reused by dropdown and floating quick-switch
+  const loadMagazineByName = async (newMagzine: string) => {
     const client = clientRef.current;
-    const newMagzine = event.target.value;
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
-    setCurrentMagazineId(newMagzine);  // Set for chat history
+    setCurrentMagazineId(newMagzine);
 
-    // Switch to absolute path to avoid relative resolution issues behind reverse proxies / nested routes
     setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
 
-    // check whether the audio file exists
     const placeholder = 'hello';
-    const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);    
+    const response: Response = await fetch(`/api/audio/check?magzine=${encodeURIComponent(newMagzine)}&word=${(placeholder)}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const res: any = await response.json();      
+    const res: any = await response.json();
     const audioExisting = res.audioExisting;
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
-      setIsAudioExisting(true);  
+      setIsAudioExisting(true);
 
       setaudioFilePath1(`./play/${newMagzine}/${newMagzine}.wav`);
 
       audioRef.current.src = `./play/${newMagzine}/${newMagzine}.wav`;
-      audioRef.current.currentTime = 0;    
+      audioRef.current.currentTime = 0;
       setProgress(0);
       setCurrentTime(0);
       if(isPlaying){toggleAudio();}
 
       if( res.scriptExisting === 'true' )
-      {      
+      {
         setIsScriptExisting(true);
 
         setNewAudioCaptions( await transformAudioScripts({magzine: newMagzine}) );
-    
+
         const newInstructions = await buildInstructions({magzine: newMagzine});
         setNewInstructions( newInstructions );
 
-        client.updateSession({ instructions: newInstructions });      
+        client.updateSession({ instructions: newInstructions });
       }else{
-        setIsScriptExisting(false);        
+        setIsScriptExisting(false);
         setNewInstructions( basicInstructions );
         if(isCaptionVisible){
           setIsCaptionVisible(false);
         }
-        //client.updateSession({ instructions: 'You are a helpful assistant and ready to answer any question' }); 
-        client.updateSession({ instructions: basicInstructions });      
+        client.updateSession({ instructions: basicInstructions });
 
         setNewAudioCaptions( [] );
-      }    
+      }
 
       if( res.keywordsExisting === 'true' )
       {
-        setNewKeywords( await fetchKeywords({magzine: newMagzine}) );      
+        setNewKeywords( await fetchKeywords({magzine: newMagzine}) );
       }else{
         const keywords = await genKeywords({magzine: newMagzine});
-        setNewKeywords(keywords);        
-        //setNewKeywords( {} );
+        setNewKeywords(keywords);
       }
 
-    } else {  
-      setIsAudioExisting(false);  
+    } else {
+      setIsAudioExisting(false);
       audioRef.current.src = '';
-      audioRef.current.currentTime = 0;    
+      audioRef.current.currentTime = 0;
       setProgress(0);
-      setCurrentTime(0);            
+      setCurrentTime(0);
 
-      //client.updateSession({ instructions: 'You are a helpful assistant and ready to answer any question' });         
       setIsScriptExisting(false);
       setNewInstructions( basicInstructions );
-      client.updateSession({ instructions: basicInstructions });      
+      client.updateSession({ instructions: basicInstructions });
 
-      setNewKeywords( {} );   
-    }    
+      setNewKeywords( {} );
+    }
 
     if( res.flashcardsExisting === 'true'){
       const flashcards = await getFlashcards({magzine: newMagzine});
-      //console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     } else {
       setFlashcards([]);
     }
+  };
+
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    loadMagazineByName(event.target.value);
   };
 
   // Handle magazine PDF upload
@@ -1504,6 +1524,9 @@ export function TabletLayout() {
     };    
 
     const updateCaption = () => {
+      // Skip updates while user is selecting text
+      if (isSelectingCaptionRef.current) return;
+
       const currentTime = audio.currentTime;
 
       // Find the current caption
@@ -1511,21 +1534,26 @@ export function TabletLayout() {
         const nextCaption = audioCaptions.current[index + 1];
         return currentTime >= caption.time && (!nextCaption || currentTime < nextCaption.time);
       });
-    
+
       if (currentCaptionIndex !== -1) {
         const currentCaption = audioCaptions.current[currentCaptionIndex];
         const nextCaption = audioCaptions.current[currentCaptionIndex + 1];
         const translationCaption = audioCaptions.current[currentCaptionIndex - 1];
         const wordsWithTiming = splitCaptionIntoWords(currentCaption, nextCaption?.time);
-    
+
         // Find the active word
         const currentWord = wordsWithTiming.find(
           (word, index) =>
             currentTime >= word.startTime && currentTime < word.endTime ||
             (index === 0 && currentTime < word.endTime) // Special case for the first word
         );
-    
+
         if (currentWord) {
+          // Skip update if the highlighted word hasn't changed
+          const wordKey = currentWord.word + '|' + currentCaptionIndex;
+          if (wordKey === lastHighlightedWordRef.current) return;
+          lastHighlightedWordRef.current = wordKey;
+
           // Highlight the active word
           const highlightedCaption = wordsWithTiming
             .map((word) =>
@@ -1533,15 +1561,20 @@ export function TabletLayout() {
                 ? ` <span style="border-radius: 4px; color: #00FFFF; display: inline-block; margin: 0 1px;">${word.word}</span> `
                 : ` <span style="display: inline; margin: 0 1px;">${word.word}</span> `
             )
-            .join(' ');           
+            .join(' ');
 
+          let html = highlightedCaption;
           if(showTranslationRef.current && translationCaption?.text){
-            setCurrentCaption(highlightedCaption + '<br />' + translationCaption.text); // Update the UI with translation
+            html += '<br />' + translationCaption.text;
           } else if(showTranslationRef.current && !translationCaption?.text){
-            setCurrentCaption(highlightedCaption + '<br /><span style="color: #888; font-style: italic; font-size: 0.9em;">Translation not available</span>');
-          } else {
-            setCurrentCaption(highlightedCaption); // Update the UI without translation
+            html += '<br /><span style="color: #888; font-style: italic; font-size: 0.9em;">Translation not available</span>';
           }
+
+          // Update DOM directly first — preserves text selection
+          const el = document.getElementById('captionDisplay');
+          if (el) el.innerHTML = html;
+          // Only sync React state when no selection is active (state update triggers re-render which destroys selection)
+          if (!isSelectingCaptionRef.current) setCurrentCaption(html);
         }
       }
     };   
@@ -2089,12 +2122,8 @@ export function TabletLayout() {
         //audio should be paused when User speaks or LLM speaks
         audioRef.current.pause();
       } else {
-        try {
-          //start playing or resuming audio
-          audioRef.current.play();
-        } catch (error) {
-          console.error('Error playing audio:', error);
-        }
+        //start playing or resuming audio
+        audioRef.current.play().catch(() => {});
       }
       setIsPlaying(!isPlaying);
     }
@@ -3753,8 +3782,10 @@ export function TabletLayout() {
         {isCaptionVisible && !isShadowMode && ( 
           <div id='captionDisplay' className="caption-display"
                dangerouslySetInnerHTML={{ __html: currentCaption }}
-               style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
+               style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1', userSelect: 'text' }}
                onClick={() => { /*toggleAudio()*/ }}
+               onMouseDown={() => { isSelectingCaptionRef.current = true; }}
+               onMouseUp={() => { setTimeout(() => { isSelectingCaptionRef.current = false; }, 0); }}
           ></div> )
         } 
 
@@ -4067,11 +4098,33 @@ export function TabletLayout() {
               {uploadError && (
                 <div className="upload-error">{uploadError}</div>
               )}
+              {/*Manage Magazines Button*/}
+              <div className="speed-controls">
+                <div title='Manage Magazines'><Layers style={{ width: '13px', height: '13px' }} />:</div>
+                <div
+                  onClick={() => setShowMagazineManager(true)}
+                  style={{ cursor: 'pointer', color: '#4a90d9', textDecoration: 'underline' }}
+                >
+                  Manage Magazines
+                </div>
+              </div>
             </div>                         
           </div>   
         </div>       
-      </div>   
+      </div>
 
+      {/* Magazine Management Overlay */}
+      <MagazineManager
+        isOpen={showMagazineManager}
+        onClose={() => setShowMagazineManager(false)}
+        onDisplayChanged={fetchDisplayedMagazines}
+      />
+
+      {/* Floating Quick-Switch for Displayed Magazines */}
+      <FloatingMagazineList
+        magazines={displayedMagazines}
+        onSelectMagazine={loadMagazineByName}
+      />
     </div>
   );
 }

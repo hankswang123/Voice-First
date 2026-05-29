@@ -1,0 +1,104 @@
+.wrapper {
+  position: fixed;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9990;
+  user-select: none;
+}
+
+.toggleBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #bbb;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.toggleBtn:hover {
+  background: #4a90d9;
+  transform: scale(1.1);
+}
+
+.toggleBtn.active {
+  background: #e74c3c;
+}
+
+.toggleBtn.active:hover {
+  background: #c0392b;
+}
+
+.panel {
+  position: absolute;
+  left: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.panelHeader {
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelHeader span {
+  font-size: 11px;
+  color: #999;
+  font-weight: normal;
+}
+
+.closePanelBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #999;
+  display: flex;
+  align-items: center;
+}
+
+.closePanelBtn:hover {
+  color: #333;
+}
+
+.item {
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item:hover {
+  background: #e8edf2;
+}
+
+.empty {
+  padding: 16px 14px;
+  text-align: center;
+  color: #aaa;
+  font-size: 13px;
+}

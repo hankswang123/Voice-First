@@ -165,6 +165,8 @@ export function ConsolePage() {
   const [isTwoPageView, setIsTwoPageView] = useState(true); // Track two-page view mode
 
   const timeUpdateHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
+  const lastHighlightedWordRef = useRef<string>('');
+  const isSelectingCaptionRef = useRef(false);
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const [isLoop, setIsLoop] = useState(false);
 
@@ -1521,6 +1523,9 @@ export function ConsolePage() {
     };    
 
     const updateCaption = () => {
+      // Skip updates while user is selecting text
+      if (isSelectingCaptionRef.current) return;
+
       const currentTime = audio.currentTime;
 
       // Find the current caption
@@ -1528,21 +1533,26 @@ export function ConsolePage() {
         const nextCaption = audioCaptions.current[index + 1];
         return currentTime >= caption.time && (!nextCaption || currentTime < nextCaption.time);
       });
-    
+
       if (currentCaptionIndex !== -1) {
         const currentCaption = audioCaptions.current[currentCaptionIndex];
         const nextCaption = audioCaptions.current[currentCaptionIndex + 1];
         const translationCaption = audioCaptions.current[currentCaptionIndex - 1];
         const wordsWithTiming = splitCaptionIntoWords(currentCaption, nextCaption?.time);
-    
+
         // Find the active word
         const currentWord = wordsWithTiming.find(
           (word, index) =>
             currentTime >= word.startTime && currentTime < word.endTime ||
             (index === 0 && currentTime < word.endTime) // Special case for the first word
         );
-    
+
         if (currentWord) {
+          // Skip update if the highlighted word hasn't changed
+          const wordKey = currentWord.word + '|' + currentCaptionIndex;
+          if (wordKey === lastHighlightedWordRef.current) return;
+          lastHighlightedWordRef.current = wordKey;
+
           // Highlight the active word
           const highlightedCaption = wordsWithTiming
             .map((word) =>
@@ -1550,13 +1560,18 @@ export function ConsolePage() {
                 ? ` <span style="border-radius: 4px; color: #00FFFF; display: inline-block; margin: 0 1px;">${word.word}</span> `
                 : ` <span style="display: inline; margin: 0 1px;">${word.word}</span> `
             )
-            .join(' ');           
+            .join(' ');
 
+          let html = highlightedCaption;
           if(showTranslationRef.current){
-            setCurrentCaption(highlightedCaption + '<br />' + translationCaption.text); // Update the UI with translation            
-          } else {
-            setCurrentCaption(highlightedCaption); // Update the UI without translation
+            html += '<br />' + translationCaption.text;
           }
+
+          // Update DOM directly first — preserves text selection
+          const el = document.getElementById('captionDisplay');
+          if (el) el.innerHTML = html;
+          // Only sync React state when no selection is active (state update triggers re-render which destroys selection)
+          if (!isSelectingCaptionRef.current) setCurrentCaption(html);
         }
       }
     };   
@@ -2223,12 +2238,8 @@ export function ConsolePage() {
         //audio should be paused when User speaks or LLM speaks
         audioRef.current.pause();
       } else {
-        try {
-          //start playing or resuming audio
-          audioRef.current.play();
-        } catch (error) {
-          console.error('Error playing audio:', error);
-        }
+        //start playing or resuming audio
+        audioRef.current.play().catch(() => {});
       }
       setIsPlaying(!isPlaying);
     }
@@ -3916,8 +3927,10 @@ export function ConsolePage() {
         {isCaptionVisible && ( 
           <div id='captionDisplay' className="caption-display"
                dangerouslySetInnerHTML={{ __html: currentCaption }}
-               style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1' }}
+               style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1', userSelect: 'text' }}
                onClick={() => { /*toggleAudio()*/ }}
+               onMouseDown={() => { isSelectingCaptionRef.current = true; }}
+               onMouseUp={() => { setTimeout(() => { isSelectingCaptionRef.current = false; }, 0); }}
           ></div> )
         } 
 
