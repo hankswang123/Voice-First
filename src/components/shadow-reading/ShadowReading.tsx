@@ -1,14 +1,30 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import styles from './ShadowReading.module.css';
+import { WavRecorder } from '../../lib/wavetools/index.js';
 
-function selectWordsToBlank(sentence: string): {
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+function selectWordsToBlank(sentence: string, difficulty: Difficulty = 'easy'): {
   blankedIndices: Set<number>;
   words: string[];
 } {
   const words = sentence.split(/\s+/);
+
+  // Filter eligible words based on difficulty
+  const minLen = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 6 : 11;
+  const maxLen = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : Infinity;
+
   const eligible = words
     .map((w, i) => ({ word: w, index: i }))
-    .filter(({ word }) => word.replace(/[^a-zA-Z'-]/g, '').length > 2);
+    .filter(({ word }) => {
+      const cleanLen = word.replace(/[^a-zA-Z'-]/g, '').length;
+      return cleanLen >= minLen && cleanLen <= maxLen;
+    });
+
+  // No fallback - if no words match the difficulty, return empty set
+  if (eligible.length === 0) {
+    return { blankedIndices: new Set(), words };
+  }
 
   const blankCount = Math.min(
     eligible.length,
@@ -37,6 +53,8 @@ interface ShadowReadingProps {
   isActive: boolean;
   onExit: () => void;
   advanceRef: React.MutableRefObject<(() => void) | null>;
+  prevRef?: React.MutableRefObject<(() => void) | null>;
+  nextRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 const ShadowReading: React.FC<ShadowReadingProps> = ({
@@ -46,11 +64,14 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
   isActive,
   onExit,
   advanceRef,
+  prevRef,
+  nextRef,
 }) => {
   const currentIndexRef = useRef(0);
   const [displayIndex, setDisplayIndex] = React.useState(0);
   const isWaitingRef = useRef(false);
   const [isWaiting, setIsWaiting] = React.useState(false);
+  const [isPaused, setIsPaused] = React.useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeItemRef = useRef<HTMLDivElement | null>(null);
   const inputRefsMap = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -68,12 +89,61 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
   const [overlayPos, setOverlayPos] = useState<{ top: number; left: number } | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const definitionCacheRef = useRef<Map<string, WordDefinition>>(new Map());
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+
+  // Voice recording state for encouraging speaking practice
+  const wavRecorderRef = useRef<WavRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingStartedRef = useRef(false);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const englishCaptions = useMemo(() => {
     const hasLatin = /[a-zA-Z]/;
     const filtered = audioCaptions.filter(c => hasLatin.test(c.text));
     return filtered.length > 0 ? filtered : audioCaptions;
   }, [audioCaptions]);
+
+  // Stop voice recording and save the audio
+  const stopRecording = useCallback(async () => {
+    if (!wavRecorderRef.current || !recordingStartedRef.current) return;
+    try {
+      const result = await wavRecorderRef.current.end();
+      wavRecorderRef.current = null;
+      recordingStartedRef.current = false;
+      setIsRecording(false);
+      // Save the recorded audio URL for playback
+      if (result?.url) {
+        setRecordedAudioUrl(result.url);
+      }
+    } catch (err) {
+      console.warn('Could not stop recording:', err);
+    }
+  }, []);
+
+  // Play back the recorded audio
+  const playRecording = useCallback(() => {
+    if (!recordedAudioUrl) return;
+    if (recordedAudioRef.current) {
+      recordedAudioRef.current.pause();
+      recordedAudioRef.current = null;
+    }
+    const audio = new Audio(recordedAudioUrl);
+    recordedAudioRef.current = audio;
+    audio.onended = () => setIsPlayingRecording(false);
+    audio.play().catch(() => {});
+    setIsPlayingRecording(true);
+  }, [recordedAudioUrl]);
+
+  // Stop playback
+  const stopPlayback = useCallback(() => {
+    if (recordedAudioRef.current) {
+      recordedAudioRef.current.pause();
+      recordedAudioRef.current = null;
+    }
+    setIsPlayingRecording(false);
+  }, []);
 
   const clearAutoPause = useCallback(() => {
     if (timeoutRef.current) {
@@ -88,11 +158,19 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     setBlankInputs(new Map());
     setBlankValidation(new Map());
     setShowSuccess(false);
+    setRecordedAudioUrl(null);
+    setIsPlayingRecording(false);
     if (successTimerRef.current) {
       clearTimeout(successTimerRef.current);
       successTimerRef.current = null;
     }
-  }, []);
+    if (recordedAudioRef.current) {
+      recordedAudioRef.current.pause();
+      recordedAudioRef.current = null;
+    }
+    // Stop recording when exiting fill-blank mode
+    stopRecording();
+  }, [stopRecording]);
 
   const startSentence = useCallback((index: number) => {
     const audio = audioRef.current;
@@ -104,6 +182,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     setDisplayIndex(index);
     isWaitingRef.current = false;
     setIsWaiting(false);
+    setIsPaused(false);
 
     audio.currentTime = englishCaptions[index].time;
     audio.play().catch(() => {});
@@ -119,19 +198,17 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     startSentence(nextIndex);
   }, [englishCaptions.length, onExit, startSentence]);
 
-  const togglePlayPause = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (audio.paused) {
-      isWaitingRef.current = false;
-      setIsWaiting(false);
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
-      isWaitingRef.current = true;
-      setIsWaiting(true);
-    }
-  }, [audioRef]);
+  const goToPrev = useCallback(() => {
+    const prevIndex = currentIndexRef.current - 1;
+    if (prevIndex < 0) return;
+    startSentence(prevIndex);
+  }, [startSentence]);
+
+  const goToNext = useCallback(() => {
+    const nextIndex = currentIndexRef.current + 1;
+    if (nextIndex >= englishCaptions.length) return;
+    startSentence(nextIndex);
+  }, [englishCaptions.length, startSentence]);
 
   const replaySentence = useCallback(() => {
     const audio = audioRef.current;
@@ -140,6 +217,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     clearAutoPause();
     isWaitingRef.current = false;
     setIsWaiting(false);
+    setIsPaused(false);
 
     const idx = currentIndexRef.current;
     audio.currentTime = englishCaptions[idx].time;
@@ -147,10 +225,46 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     // Pause at next caption is handled by handleTimeUpdate
   }, [audioRef, englishCaptions, clearAutoPause]);
 
+  const togglePlayPause = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // If waiting (script finished naturally), replay from beginning
+    if (isWaitingRef.current) {
+      replaySentence();
+      setIsPaused(false);
+      return;
+    }
+
+    // Normal pause/resume during playback
+    if (audio.paused) {
+      audio.play().catch(() => {});
+      setIsPaused(false);
+    } else {
+      audio.pause();
+      setIsPaused(true);
+    }
+  }, [audioRef, replaySentence]);
+
+  // Start voice recording to encourage speaking practice
+  const startRecording = useCallback(async () => {
+    if (recordingStartedRef.current) return;
+    try {
+      const recorder = new WavRecorder({ sampleRate: 24000 });
+      await recorder.begin();
+      await recorder.record();
+      wavRecorderRef.current = recorder;
+      recordingStartedRef.current = true;
+      setIsRecording(true);
+    } catch (err) {
+      console.warn('Could not start recording:', err);
+    }
+  }, []);
+
   const enterFillBlank = useCallback(() => {
     const idx = currentIndexRef.current;
     const text = englishCaptions[idx].text;
-    const { blankedIndices, words } = selectWordsToBlank(text);
+    const { blankedIndices, words } = selectWordsToBlank(text, difficulty);
 
     setBlankData({ blankedIndices, words });
 
@@ -163,8 +277,10 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     setBlankValidation(new Map());
     setShowSuccess(false);
     setMode('fillBlank');
-    // Audio keeps playing — fill-blank works in parallel with hearing
-  }, [englishCaptions]);
+
+    // Start recording to encourage speaking practice
+    startRecording();
+  }, [englishCaptions, difficulty, startRecording]);
 
   const exitFillBlank = useCallback(() => {
     resetFillBlankState();
@@ -213,9 +329,9 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
 
         if (allCorrect) {
           setShowSuccess(true);
-          successTimerRef.current = setTimeout(() => {
-            advanceNext();
-          }, 1500);
+          // Stop recording so user can listen to their voice
+          stopRecording();
+          // No auto-advance — user stays on current script to play their recording
         }
       } else {
         setBlankValidation(prevVal => {
@@ -296,9 +412,107 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     }
   }, [blankInputs, exitFillBlank, advanceNext]);
 
+  // Help function: fills in the next incorrect/empty letter
+  const handleHelp = useCallback(() => {
+    if (!blankData) return;
+
+    const sortedIndices = [...blankData.blankedIndices].sort((a, b) => a - b);
+
+    // Find the first incorrect or empty letter across all blanked words
+    for (const wordIdx of sortedIndices) {
+      const word = blankData.words[wordIdx];
+      const cleanWord = word.replace(/[^a-zA-Z'-]/g, '');
+      const currentInputs = blankInputs.get(wordIdx) || [];
+      const validation = blankValidation.get(wordIdx) || [];
+
+      for (let charIdx = 0; charIdx < cleanWord.length; charIdx++) {
+        const isCorrect = validation[charIdx] === 'correct';
+        const currentVal = currentInputs[charIdx]?.toLowerCase();
+        const correctVal = cleanWord[charIdx]?.toLowerCase();
+
+        if (!isCorrect && currentVal !== correctVal) {
+          // Found an incorrect/empty letter - fill it with the correct one
+          setBlankInputs(prev => {
+            const next = new Map(prev);
+            const arr = [...(next.get(wordIdx) || [])];
+            arr[charIdx] = correctVal;
+            next.set(wordIdx, arr);
+
+            // Check if this completes the word
+            const isWordCorrect = arr.every((ch, i) =>
+              ch.toLowerCase() === cleanWord[i].toLowerCase()
+            );
+
+            if (isWordCorrect) {
+              setBlankValidation(prevVal => {
+                const vNext = new Map(prevVal);
+                vNext.set(wordIdx, arr.map(() => 'correct' as const));
+                return vNext;
+              });
+
+              // Check if ALL words are correct
+              const allCorrect = [...blankData.blankedIndices].every(idx => {
+                const w = blankData.words[idx].replace(/[^a-zA-Z'-]/g, '');
+                const inputs = idx === wordIdx ? arr : (prev.get(idx) || []);
+                return inputs.every((ch, i) => ch.toLowerCase() === w[i].toLowerCase());
+              });
+
+              if (allCorrect) {
+                setShowSuccess(true);
+                stopRecording();
+              }
+            } else {
+              // Update validation for this word
+              setBlankValidation(prevVal => {
+                const vNext = new Map(prevVal);
+                vNext.set(wordIdx, arr.map((ch, i) => {
+                  if (!ch) return 'empty' as const;
+                  return ch.toLowerCase() === cleanWord[i].toLowerCase()
+                    ? 'correct' as const
+                    : 'wrong' as const;
+                }));
+                return vNext;
+              });
+            }
+
+            return next;
+          });
+
+          // Focus the next input after this one
+          if (charIdx < cleanWord.length - 1) {
+            const nextKey = `${wordIdx}-${charIdx + 1}`;
+            setTimeout(() => {
+              inputRefsMap.current.get(nextKey)?.focus();
+            }, 50);
+          } else {
+            // Move to next word's first input
+            const currentPos = sortedIndices.indexOf(wordIdx);
+            for (let j = currentPos + 1; j < sortedIndices.length; j++) {
+              const nextWordIdx = sortedIndices[j];
+              const nextWord = blankData.words[nextWordIdx].replace(/[^a-zA-Z'-]/g, '');
+              const nextInputs = blankInputs.get(nextWordIdx) || [];
+              const isNextDone = nextInputs.every((ch, i) => ch.toLowerCase() === nextWord[i].toLowerCase());
+              if (!isNextDone) {
+                const targetKey = `${nextWordIdx}-0`;
+                setTimeout(() => {
+                  inputRefsMap.current.get(targetKey)?.focus();
+                }, 50);
+                break;
+              }
+            }
+          }
+
+          return; // Only fill one letter per help click
+        }
+      }
+    }
+  }, [blankData, blankInputs, blankValidation, stopRecording]);
+
   useEffect(() => {
     advanceRef.current = advanceNext;
-  }, [advanceNext, advanceRef]);
+    if (prevRef) prevRef.current = goToPrev;
+    if (nextRef) nextRef.current = goToNext;
+  }, [advanceNext, goToPrev, goToNext, advanceRef, prevRef, nextRef]);
 
   // Word selection handler for dictionary lookup
   const handleWordLookup = useCallback(async (word: string, rect: DOMRect) => {
@@ -400,6 +614,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
         audio.pause();
         isWaitingRef.current = true;
         setIsWaiting(true);
+        setIsPaused(true);
         clearAutoPause();
       }
     };
@@ -422,6 +637,7 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
         audio.pause();
         isWaitingRef.current = true;
         setIsWaiting(true);
+        setIsPaused(true);
         clearAutoPause();
       } else {
         onExit();
@@ -439,6 +655,17 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     // Clear stale timeout when playback rate changes — handleTimeUpdate handles pausing
     clearAutoPause();
   }, [playbackRate, isActive, clearAutoPause]);
+
+  // Cleanup recorder on unmount or deactivation
+  useEffect(() => {
+    return () => {
+      if (wavRecorderRef.current && recordingStartedRef.current) {
+        wavRecorderRef.current.end().catch(() => {});
+        wavRecorderRef.current = null;
+        recordingStartedRef.current = false;
+      }
+    };
+  }, [isActive]);
 
   useEffect(() => {
     if (!activeItemRef.current) return;
@@ -475,11 +702,30 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.title}>Shadow Reading / 影子跟读</span>
-        <span className={styles.hint}>
-          {isFillBlankMode
-            ? 'Type to fill blanks | Space: skip'
-            : 'Space: next sentence | Esc: exit'}
-        </span>
+        <div className={styles.headerRight}>
+          <div className={styles.difficultySelector}>
+            {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => (
+              <button
+                key={d}
+                className={`${styles.difficultyBtn} ${difficulty === d ? styles.difficultyActive : ''}`}
+                onClick={() => setDifficulty(d)}
+                title={d === 'easy' ? '≤5 letters' : d === 'medium' ? '6-10 letters' : '10+ letters'}
+              >
+                {d === 'easy' ? 'E' : d === 'medium' ? 'M' : 'H'}
+              </button>
+            ))}
+          </div>
+          {isRecording && (
+            <span className={styles.recordingIndicator}>
+              <span className={styles.recordingDot} /> Recording
+            </span>
+          )}
+          <span className={styles.hint}>
+            {isFillBlankMode
+              ? '↑↓: navigate | Space: skip | 💡: help'
+              : '↑↓: navigate | Space: next | Esc: exit'}
+          </span>
+        </div>
       </div>
       <div className={styles.scrollArea}>
         {englishCaptions.map((caption, i) => (
@@ -540,8 +786,9 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
                   );
                 })}
                 {showSuccess && (
-                  <div className={styles.successOverlay}>
-                    <span className={styles.successCheck}>{'✓'}</span>
+                  <div className={styles.successBanner}>
+                    <span className={styles.successCheck}>✓</span>
+                    <span className={styles.successText}>All correct!</span>
                   </div>
                 )}
               </div>
@@ -554,11 +801,35 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
                   {'↻'} Repeat
                 </button>
                 <button className={styles.toolbarBtn} onClick={togglePlayPause}>
-                  {isWaiting ? '▶' : '⏸'}
+                  {(isWaiting || isPaused) ? '▶' : '⏸'}
                 </button>
-                {!isFillBlankMode && (
+                {!isFillBlankMode && !showSuccess && (
                   <button className={styles.toolbarBtn} onClick={enterFillBlank}>
                     {'✎'} Fill Blank
+                  </button>
+                )}
+                {isFillBlankMode && !showSuccess && (
+                  <button className={`${styles.toolbarBtn} ${styles.helpBtn}`} onClick={handleHelp}>
+                    {'💡'} Help
+                  </button>
+                )}
+                {recordedAudioUrl && showSuccess && (
+                  <button
+                    className={`${styles.toolbarBtn} ${styles.playbackBtn}`}
+                    onClick={isPlayingRecording ? stopPlayback : playRecording}
+                  >
+                    {isPlayingRecording ? '⏹' : '🎙'} {isPlayingRecording ? 'Stop' : 'My Voice'}
+                  </button>
+                )}
+                {showSuccess && (
+                  <button
+                    className={`${styles.toolbarBtn} ${styles.nextToolbarBtn}`}
+                    onClick={() => {
+                      exitFillBlank();
+                      advanceNext();
+                    }}
+                  >
+                    {'Next →'}
                   </button>
                 )}
               </div>

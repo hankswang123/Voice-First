@@ -165,23 +165,29 @@
   background: rgba(76, 175, 80, 0.15);
 }
 
-/* Success overlay */
-.successOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
+/* Success banner (inline, not overlay) */
+.successBanner {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(26, 26, 46, 0.7);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 4px 12px;
+  margin-top: 8px;
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  border-radius: 6px;
   animation: fadeIn 0.2s ease-out;
-  z-index: 10;
 }
 
 .successCheck {
-  font-size: 3em;
+  font-size: 1.2em;
   color: #4CAF50;
-  animation: popIn 0.3s ease-out;
+  font-weight: 700;
+}
+
+.successText {
+  font-size: 0.9em;
+  color: #4CAF50;
+  font-weight: 600;
 }
 
 @keyframes popIn {
@@ -263,4 +269,105 @@
 .loading {
   font-size: 0.85em;
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* Difficulty selector */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.difficultySelector {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.difficultyBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.difficultyBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.difficultyActive {
+  background: rgba(124, 158, 255, 0.25) !important;
+  color: #7c9eff !important;
+}
+
+/* Recording indicator */
+.recordingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: #f44336;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.recordingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f44336;
+  animation: recordingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Playback button for recorded voice */
+.playbackBtn {
+  background: rgba(124, 158, 255, 0.15) !important;
+  border-color: rgba(124, 158, 255, 0.4) !important;
+  color: #7c9eff !important;
+}
+
+.playbackBtn:hover {
+  background: rgba(124, 158, 255, 0.25) !important;
+  border-color: #7c9eff !important;
+}
+
+/* Next button in toolbar */
+.nextToolbarBtn {
+  background: rgba(76, 175, 80, 0.15) !important;
+  border-color: rgba(76, 175, 80, 0.4) !important;
+  color: #4CAF50 !important;
+  font-weight: 600 !important;
+}
+
+.nextToolbarBtn:hover {
+  background: rgba(76, 175, 80, 0.25) !important;
+  border-color: #4CAF50 !important;
+}
+
+/* Help button */
+.helpBtn {
+  background: rgba(255, 193, 7, 0.15) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
+  color: #FFC107 !important;
+}
+
+.helpBtn:hover {
+  background: rgba(255, 193, 7, 0.25) !important;
+  border-color: #FFC107 !important;
 }

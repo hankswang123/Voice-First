@@ -254,6 +254,8 @@ export function DesktopLayout() {
   const [isShadowMode, setIsShadowMode] = useState(false);
   const isShadowModeRef = useRef(false);
   const shadowAdvanceRef = useRef<(() => void) | null>(null);
+  const shadowPrevRef = useRef<(() => void) | null>(null);
+  const shadowNextRef = useRef<(() => void) | null>(null);
 
   // Magazine management state
   const [showMagazineManager, setShowMagazineManager] = useState(false);
@@ -2416,6 +2418,13 @@ export function DesktopLayout() {
           repeatPreviousLi.click();
         }
       }
+      else if(e.code === 'ArrowUp'){
+        if (isShadowModeRef.current && shadowPrevRef.current) {
+          e.preventDefault();
+          shadowPrevRef.current();
+          return;
+        }
+      }
       else if(e.code === 'ArrowRight'){
         const repeatForwardLi = document.getElementById('repeatForwardLi');
         if(repeatForwardLi){
@@ -2423,6 +2432,11 @@ export function DesktopLayout() {
         }
       }   
       else if(e.code === 'ArrowDown'){
+        if (isShadowModeRef.current && shadowNextRef.current) {
+          e.preventDefault();
+          shadowNextRef.current();
+          return;
+        }
         const repeatCurrentLi = document.getElementById('repeatCurrentLi');
         if(repeatCurrentLi){
           repeatCurrentLi.click();
@@ -3918,6 +3932,8 @@ export function DesktopLayout() {
                 setIsShadowMode(false);
               }}
               advanceRef={shadowAdvanceRef}
+              prevRef={shadowPrevRef}
+              nextRef={shadowNextRef}
             />
           </div>
           <iframe id="videoFrame" width="800" height="450" src="" allow="fullscreen" allowFullScreen style={{display: 'none'}}></iframe>
