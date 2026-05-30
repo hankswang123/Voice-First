@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
       rel="stylesheet"
     />
-    <!-- Leaflet / OpenStreetMap -->
+    <!-- Leaflet / OpenStreetMap — loaded async to avoid blocking page render -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
@@ -21,8 +21,9 @@
       src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
       integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
       crossorigin=""
+      defer
     ></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- YouTube iframe API removed — videos use plain <iframe> embeds, not the YT.Player API -->
     <!-- test integrate SAP Joule on the page: https://help.sap.com/docs/joule/service-guide/integrating-joule-using-script
     <script
     src="https://allen-gong2-5bdmdwww.eu12.sapdas.cloud.sap/resources/public/webclient/bootstrap.js"

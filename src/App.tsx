@@ -38,9 +38,16 @@ function DeviceLayout() {
   const [deviceType, setDeviceType] = useState<ReturnType<typeof detectDevice>>(detectDevice());
 
   useEffect(() => {
-    const updateDeviceType = () => setDeviceType(detectDevice());
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const updateDeviceType = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setDeviceType(detectDevice()), 150);
+    };
     window.addEventListener('resize', updateDeviceType);
-    return () => window.removeEventListener('resize', updateDeviceType);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateDeviceType);
+    };
   }, []);
 
   return (

@@ -53,6 +53,9 @@ export async function fetchKeywords({magzine} = {magzine: magzines[0]}) {
 
 let cachedMagzines = null;
 
+// Cache for audio_scripts.txt to avoid duplicate fetches during magazine loading
+const audioScriptsCache = new Map();
+
 export async function fetchMagzinesDynamic() {
   if (cachedMagzines) return cachedMagzines;
   try {
@@ -72,10 +75,14 @@ export async function fetchMagzinesDynamic() {
   }
 }
 
-// To fetch the audio scripts from the public/play folder
+// To fetch the audio scripts from the public/play folder (cached)
 async function fetchAudioScripts({magzine} = {magzine: magzines[0]}) {
+    if (audioScriptsCache.has(magzine)) {
+        return audioScriptsCache.get(magzine);
+    }
     const response = await fetch(`./play/${magzine}/audio_scripts.txt`);
     const script = await response.text();
+    audioScriptsCache.set(magzine, script);
     return script;
 }
 
@@ -96,9 +103,8 @@ export async function getFlashcards({magzine} = {magzine: magzines[0]}) {
 // Function to transform the script into the desired format to be used as audioCaptions
 export async function transformAudioScripts({magzine} = {magzine: magzines[0]}) {
     try{
-        // To fetch the scripts from the public folder
-        const response = await fetch(`./play/${magzine}/audio_scripts.txt`);
-        const script = await response.text();
+        // Use cached fetch to avoid duplicate network requests
+        const script = await fetchAudioScripts({magzine});
 
         //const lines = script.trim().split('\n').filter(line => line.trim() !== '');
         const lines = script.trim().split('\n').filter(line => line.trim() !== '');
@@ -196,9 +202,8 @@ export async function buildInstructions({magzine} = {magzine: magzines[0]}) {
         if (magzine === 'no_scripts') {
             return basicInstructions;
         }
-        
-        const response = await fetch(`./play/${magzine}/audio_scripts.txt`);
-        const audioScripts = await response.text();
+
+        const audioScripts = await fetchAudioScripts({magzine});
 
         const instructions = `System settings:
         ##Tool use
@@ -297,8 +302,7 @@ export async function genKeywords( {magzine} = {magzine: magzines[0]} ) {
 
     try {
         //const data = await fs.readFile(filePath, 'utf8');
-        const response = await fetch(`./play/${magzine}/audio_scripts.txt`);
-        const audioScripts = await response.text();        
+        const audioScripts = await fetchAudioScripts({magzine});
         const keywords = {};
         let match;
 
