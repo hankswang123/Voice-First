@@ -53,7 +53,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3001; 
+const port = process.env.PORT || 3001;
+
+// Cache PDF files aggressively — they don't change after upload.
+// Must come before express.static so headers are set before the response is sent.
+app.use((req, res, next) => {
+    if (req.path.endsWith('.pdf')) {
+        res.set('Cache-Control', 'public, max-age=604800, immutable'); // 7 days
+    }
+    next();
+});
 
 // Serve the React build assets in production. We check for the build directory
 // so that local dev (where CRA dev server handles assets) is unaffected if build not yet run.
@@ -62,6 +71,10 @@ if (fs.existsSync(buildPath)) {
     app.use(express.static(buildPath));
     console.log('Serving static React build from', buildPath);
 }
+
+// Serve public/ directory (magazine PDFs, audio, flashcards) in production.
+// In development, CRA's webpack-dev-server handles this automatically.
+app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS settings
 app.use(cors({

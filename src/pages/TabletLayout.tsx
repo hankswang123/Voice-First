@@ -184,6 +184,11 @@ export function TabletLayout() {
     scrollContainerRef: containerRef
   });
 
+  // react-pdf options — memoized to avoid re-rendering <Document> on every parent render
+  const pdfDocumentOptions = React.useMemo(() => ({
+    disableAutoFetch: false,
+  }), []);
+
   const timeUpdateHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
   const lastHighlightedWordRef = useRef<string>('');
   const isSelectingCaptionRef = useRef(false);
@@ -262,7 +267,10 @@ export function TabletLayout() {
       setaudioFilePath1(`/play/${magazine}/${magazine}.wav`);
     };
 
-    loadLastMagazine();
+    // Only load magazine when accessToken is available (after login)
+    if (accessToken) {
+      loadLastMagazine();
+    }
   }, [dynamicMagzines, accessToken]);
 
   // Fetch displayed magazines for the floating quick-switch
@@ -3592,9 +3600,35 @@ export function TabletLayout() {
               file={pdfFilePath1}
               onLoadSuccess={(pdf) => { console.log('[PDF] load success pages=', pdf.numPages, 'file=', pdfFilePath1); onDocumentLoadSuccess(pdf); }}
               onLoadError={(err) => { console.error('[PDF] load error', pdfFilePath1, err); }}
-              // Use rest args to satisfy react-pdf's OnSourceSuccess type (which can supply multiple params)
               onSourceSuccess={(...args) => { console.log('[PDF] source success', ...args); }}
               onSourceError={(err) => { console.error('[PDF] source error', err); }}
+              onLoadProgress={({ loaded, total }) => {
+                if (total > 0) {
+                  console.log(`[PDF] download progress: ${Math.round((loaded / total) * 100)}%`);
+                }
+              }}
+              loading={
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '60vh',
+                  width: '100%',
+                  gap: '16px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    border: '3px solid #e0e0e0',
+                    borderTop: '3px solid #4A90D9',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  <span style={{ color: '#666', fontSize: '14px' }}>Loading PDF…</span>
+                </div>
+              }
+              options={pdfDocumentOptions}
             >
               {/* Page Rendering with Lazy Loading */}
               {numPages && getPagePairsToRender().map((pagePair, index) => {
