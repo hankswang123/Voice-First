@@ -258,4 +258,30 @@ router.get('/me', authenticate, (req, res) => {
   }
 });
 
+// GET /api/auth/preferences
+router.get('/preferences', authenticate, (req, res) => {
+  try {
+    const prefs = authDb.getAllUserPreferences(req.user.userId);
+    res.json({ preferences: prefs });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({ error: 'Failed to get preferences' });
+  }
+});
+
+// PUT /api/auth/preferences
+router.put('/preferences', authenticate, (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key) {
+      return res.status(400).json({ error: 'Preference key is required' });
+    }
+    authDb.setUserPreference(req.user.userId, key, value);
+    res.json({ message: 'Preference saved' });
+  } catch (error) {
+    console.error('Set preference error:', error);
+    res.status(500).json({ error: 'Failed to save preference' });
+  }
+});
+
 export default router;

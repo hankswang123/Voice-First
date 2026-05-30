@@ -55,3 +55,24 @@ export async function getMe(accessToken: string) {
   if (!res.ok) throw new Error('Not authenticated');
   return res.json();
 }
+
+export async function getPreferences(accessToken: string) {
+  const res = await fetch(`${API_BASE}/preferences`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error('Failed to get preferences');
+  return res.json();
+}
+
+export async function setPreference(accessToken: string, key: string, value: string) {
+  const res = await fetch(`${API_BASE}/preferences`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ key, value }),
+  });
+  if (!res.ok) throw new Error('Failed to save preference');
+  return res.json();
+}

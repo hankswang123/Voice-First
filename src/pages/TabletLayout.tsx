@@ -30,6 +30,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
 import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut } from 'react-feather';
 import { useAuth } from '../contexts/AuthContext';
+import { getPreferences, setPreference } from '../utils/authApi';
 
 import './style/TabletLayout.scss';
 
@@ -62,7 +63,7 @@ interface RealtimeEvent {
 }
 
 export function TabletLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, accessToken } = useAuth();
   /**
    * Ask user for API Key
    * If we're using the local relay server, we don't need this
@@ -236,13 +237,33 @@ export function TabletLayout() {
 
   useEffect(() => {
     if (!dynamicMagzines.length) return;
-    const first = dynamicMagzines[0];
-    setNewMagzine(first.replace(/[_-]/g, ' '));
-    setCurrentMagazineId(first);
-    console.log('First Magzine:', first);
-    setpdfFilePath1(`/play/${first}/${first}.pdf`);
-    setaudioFilePath1(`/play/${first}/${first}.wav`);
-  }, [dynamicMagzines]);
+
+    // Load user's last read magazine preference
+    const loadLastMagazine = async () => {
+      let lastMagazine = null;
+      if (accessToken) {
+        try {
+          const { preferences } = await getPreferences(accessToken);
+          lastMagazine = preferences?.lastReadMagazine;
+        } catch (e) {
+          console.warn('Failed to load preferences:', e);
+        }
+      }
+
+      // Use last read magazine if it exists in the list, otherwise use first
+      const magazine = (lastMagazine && dynamicMagzines.includes(lastMagazine))
+        ? lastMagazine
+        : dynamicMagzines[0];
+
+      setNewMagzine(magazine.replace(/[_-]/g, ' '));
+      setCurrentMagazineId(magazine);
+      console.log('Loading Magazine:', magazine, lastMagazine ? '(last read)' : '(default)');
+      setpdfFilePath1(`/play/${magazine}/${magazine}.pdf`);
+      setaudioFilePath1(`/play/${magazine}/${magazine}.wav`);
+    };
+
+    loadLastMagazine();
+  }, [dynamicMagzines, accessToken]);
 
   // Fetch displayed magazines for the floating quick-switch
   useEffect(() => {
@@ -692,6 +713,13 @@ export function TabletLayout() {
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
     setCurrentMagazineId(newMagzine);
+
+    // Save user's last read magazine preference
+    if (accessToken) {
+      setPreference(accessToken, 'lastReadMagazine', newMagzine).catch(e =>
+        console.warn('Failed to save last read magazine:', e)
+      );
+    }
 
     setpdfFilePath1(`/play/${newMagzine}/${newMagzine}.pdf`);
 

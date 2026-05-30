@@ -49,10 +49,22 @@ export function initAuthSchema() {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id TEXT NOT NULL,
+      pref_key TEXT NOT NULL,
+      pref_value TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, pref_key),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_email_verifications_user ON email_verifications(user_id);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
   `);
 }
 
@@ -198,6 +210,39 @@ export function deleteRefreshToken(tokenId) {
 export function deleteAllRefreshTokens(userId) {
   const db = getDb();
   db.prepare('DELETE FROM refresh_tokens WHERE user_id = ?').run(userId);
+}
+
+// ==================== USER PREFERENCES ====================
+
+export function getUserPreference(userId, key) {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT pref_value FROM user_preferences WHERE user_id = ? AND pref_key = ?
+  `).get(userId, key);
+  return row ? row.pref_value : null;
+}
+
+export function setUserPreference(userId, key, value) {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO user_preferences (user_id, pref_key, pref_value, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id, pref_key) DO UPDATE SET
+      pref_value = excluded.pref_value,
+      updated_at = CURRENT_TIMESTAMP
+  `).run(userId, key, value);
+}
+
+export function getAllUserPreferences(userId) {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT pref_key, pref_value FROM user_preferences WHERE user_id = ?
+  `).all(userId);
+  const prefs = {};
+  for (const row of rows) {
+    prefs[row.pref_key] = row.pref_value;
+  }
+  return prefs;
 }
 
 // ==================== SEED ====================
