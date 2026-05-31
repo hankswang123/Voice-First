@@ -1903,27 +1903,60 @@ export function ConsolePage() {
       const readAloudLi = document.getElementById('readAloudLi');  
       const translateLi = document.getElementById('translateLi');  
       const explainLi = document.getElementById('explainLi');
-      if( selectedText.includes(' ') || selectedText.includes('\n') || selectedText.length>15 )  
+      const quickDefArea = document.getElementById('quickDefArea');
+      const quickDefWord = document.getElementById('quickDefWord');
+      const quickDefContent = document.getElementById('quickDefContent');
+
+      if( selectedText.includes(' ') || selectedText.includes('\n') || selectedText.length>15 )
       {// Not likely a single WORD selected, hide the wordCard
-        wordCardLi.style.display = 'none';        
+        wordCardLi.style.display = 'none';
         readAloudLi.style.display = 'block';
         translateLi.style.display = 'block';
         //Explain function is low frequency, so hide it
         explainLi.style.display = 'none';
+        quickDefArea.style.display = 'none';
       }else{
         wordCardLi.style.display = 'block';
-        readAloudLi.style.display = 'block';   
-        translateLi.style.display = 'none';     
-        explainLi.style.display = 'none';    
+        readAloudLi.style.display = 'block';
+        translateLi.style.display = 'none';
+        explainLi.style.display = 'none';
         wordCardLi.onclick = async (event) => {
           try{
 
             explainAndShowImage(selectedText);
-            
+
           }catch(error){
             console.error('Error generating image:', error);
-          }           
+          }
         };
+
+        // Fetch and show inline Chinese definition
+        const quickDefPhonetic = document.getElementById('quickDefPhonetic');
+        const quickDefPlay = document.getElementById('quickDefPlay');
+        const quickDefPhrases = document.getElementById('quickDefPhrases');
+        quickDefWord.textContent = selectedText;
+        quickDefPhonetic.textContent = '';
+        quickDefContent.textContent = '查询中...';
+        quickDefPhrases.textContent = '';
+        quickDefArea.style.display = 'block';
+        fetch(`/api/dictionary-zh/${encodeURIComponent(selectedText)}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(data => {
+            quickDefPhonetic.textContent = data.usphone ? `/${data.usphone}/` : '';
+            quickDefContent.textContent = data.chinese;
+            // Play button
+            quickDefPlay.onclick = () => {
+              const audio = new Audio(data.audioUrl);
+              audio.play().catch(() => {});
+            };
+            // Phrases
+            if (data.phrases?.length > 0) {
+              quickDefPhrases.textContent = data.phrases.map(p => `${p.en} → ${p.zh}`).join(' | ');
+            }
+          })
+          .catch(() => {
+            quickDefContent.textContent = '未找到释义';
+          });
       }
       
       
@@ -3524,8 +3557,17 @@ export function ConsolePage() {
        {/* <img id='wordCardImg' src={imgURL} alt='Word Card' style={{width: '200px', height: '200px'}}></img> */} 
       </div>
 
-      {/* ContextMenu when text selected  */}   
+      {/* ContextMenu when text selected  */}
       <div id="contextMenu" style={{position: 'absolute', display: 'none'}}>
+        <div id='quickDefArea' style={{display: 'none', padding: '6px 10px', borderBottom: '1px solid #eee', fontSize: '13px', minWidth: '200px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+            <span id='quickDefWord' style={{fontWeight: 'bold'}}></span>
+            <span id='quickDefPhonetic' style={{color: '#999', fontSize: '12px'}}></span>
+            <button id='quickDefPlay' style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '0 2px'}} title='Play pronunciation'>🔊</button>
+          </div>
+          <div id='quickDefContent' style={{color: '#333', marginTop: '2px'}}></div>
+          <div id='quickDefPhrases' style={{color: '#888', fontSize: '12px', marginTop: '4px', fontStyle: 'italic'}}></div>
+        </div>
         <ul>
           <li id='wordCardLi'>Word Card/词卡</li>
           <li id='readAloudLi'>Read Aloud/朗读</li>
@@ -3537,7 +3579,7 @@ export function ConsolePage() {
           <li>
             <form onSubmit={handleSubmit}>
               <input id='menuInput' placeholder="Ask me anything..." style={{marginRight: '5px'}}></input>
-              <button type='submit'>Ask</button>             
+              <button type='submit'>Ask</button>
             </form>
           </li>
         </ul>

@@ -378,6 +378,51 @@ app.get("/api/dictionary/:word", async (req, res) => {
     }
 });
 
+// Quick Chinese dictionary lookup - uses Youdao /jsonapi (free, no key required)
+app.get("/api/dictionary-zh/:word", async (req, res) => {
+    try {
+        const { word } = req.params;
+        const apiUrl = `http://dict.youdao.com/jsonapi?q=${encodeURIComponent(word)}`;
+        const response = await axios.get(apiUrl, { timeout: 3000 });
+        const data = response.data;
+
+        // Extract phonetic and definitions from ec field
+        const ecWord = data.ec?.word?.[0];
+        const trs = ecWord?.trs?.map(t => t.tr?.[0]?.l?.i?.[0]).filter(Boolean) || [];
+        const usphone = ecWord?.usphone || '';
+        const ukphone = ecWord?.ukphone || '';
+
+        if (trs.length === 0) {
+            return res.status(404).json({ error: 'Word not found' });
+        }
+
+        // TTS audio URL pattern: type=1 UK, type=2 US
+        const audioUrl = `http://dict.youdao.com/dictvoice?audio=${encodeURIComponent(word)}&type=2`;
+
+        // Extract common phrases (max 3)
+        const phrases = (data.phrs?.phrs || []).slice(0, 3).map(p => ({
+            en: p.phr?.headword?.l?.i || '',
+            zh: p.phr?.trs?.[0]?.tr?.l?.i || '',
+        }));
+
+        // Extract exam level
+        const level = data.individual?.level || '';
+
+        res.json({
+            word: data.input || word,
+            usphone,
+            ukphone,
+            chinese: trs[0],           // primary definition
+            allDefs: trs,              // all definitions
+            audioUrl,
+            phrases,
+            level,
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Dictionary lookup failed', details: error.message });
+    }
+});
+
 // Call deepseek API to chat
 app.get("/api/deepseek/chat", async (req, res) => {
     try {

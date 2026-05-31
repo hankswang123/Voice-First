@@ -106,11 +106,11 @@ export async function transformAudioScripts({magzine} = {magzine: magzines[0]}) 
         // Use cached fetch to avoid duplicate network requests
         const script = await fetchAudioScripts({magzine});
 
-        //const lines = script.trim().split('\n').filter(line => line.trim() !== '');
         const lines = script.trim().split('\n').filter(line => line.trim() !== '');
 
         const audioCaptions = [];
         let currentTime = 0;
+        let lastTime = -1; // Track last timestamp to detect Chinese duplicate lines
 
         lines.forEach(line => {
             // Match timestamp and ignore speaker
@@ -124,7 +124,19 @@ export async function transformAudioScripts({magzine} = {magzine: magzines[0]}) 
                 // Process line as text
                 const text = line.trim();
                 if (text) {
+                    // Script format: Chinese line first, then English line with same timestamp.
+                    // Skip lines that are primarily Chinese (CJK characters > 30% of non-space chars).
+                    const cjkChars = (text.match(/[一-鿿]/g) || []).length;
+                    const totalChars = text.replace(/\s/g, '').length;
+                    if (totalChars > 0 && cjkChars / totalChars > 0.3) {
+                        return; // Skip Chinese line
+                    }
+                    // Also skip duplicate timestamp entries (the English line already captured the time)
+                    if (currentTime === lastTime) {
+                        return; // Same timestamp as previous caption — skip duplicate
+                    }
                     audioCaptions.push({ time: currentTime, text });
+                    lastTime = currentTime;
                 }
             }
         });
