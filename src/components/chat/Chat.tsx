@@ -113,6 +113,46 @@ const StructPrompt = ({ prompt }: { prompt: string }) => {
 
 const AssistantMessage = ({ text }: { text: string }) => {
   const [showPrompt, setShowPrompt] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use event delegation — attach listeners to the container,
+  // not to elements inside react-markdown (which can break synthetic events)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+
+      // Image click → open popup
+      if (target.tagName === 'IMG' && target.getAttribute('alt') === 'Image Could not be loaded') {
+        const src = (target as HTMLImageElement).src;
+        const popupOverlay = document.getElementById('popupOverlay');
+        const imageFrame = document.getElementById('imageFrame');
+        const videoFrame = document.getElementById('videoFrame');
+        const popupContent = document.getElementById('popupContent');
+        if (!popupOverlay || !imageFrame || !videoFrame || !popupContent) return;
+
+        (imageFrame as HTMLImageElement).src = src;
+        (popupContent as HTMLIFrameElement).className = 'popup-content-video';
+        popupOverlay.style.display = 'flex';
+        (imageFrame as HTMLImageElement).style.display = 'flex';
+        (imageFrame as HTMLImageElement).style.width = '670px';
+        (imageFrame as HTMLImageElement).style.height = '670px';
+        (videoFrame as HTMLIFrameElement).style.display = 'none';
+        return;
+      }
+
+      // Show/Hide Prompt click
+      if (target.textContent === 'Show Prompt' || target.textContent === 'Hide Prompt') {
+        setShowPrompt(prev => !prev);
+        return;
+      }
+    };
+
+    container.addEventListener('click', handleClick);
+    return () => container.removeEventListener('click', handleClick);
+  }, []);
 
   if (!text) return null;
 
@@ -123,25 +163,9 @@ const AssistantMessage = ({ text }: { text: string }) => {
     return text;
   };
 
-  const handleImgDoubleClick = (src: string) => {
-    const popupOverlay = document.getElementById('popupOverlay');
-    const imageFrame = document.getElementById('imageFrame');
-    const videoFrame = document.getElementById('videoFrame');
-    const popupContent = document.getElementById('popupContent');
-    if (!popupOverlay || !imageFrame || !videoFrame || !popupContent) return;
-
-    (imageFrame as HTMLImageElement).src = src;
-    (popupContent as HTMLIFrameElement).className = 'popup-content-video';
-    popupOverlay.style.display = 'flex';
-    (imageFrame as HTMLImageElement).style.display = 'flex';
-    (imageFrame as HTMLImageElement).style.width = '670px';
-    (imageFrame as HTMLImageElement).style.height = '670px';
-    (videoFrame as HTMLIFrameElement).style.display = 'none';
-  }
-
-  return (  
-    <div className={styles.assistantMessage}>
-	    <Markdown rehypePlugins={[rehypeRaw]}         
+  return (
+    <div className={styles.assistantMessage} ref={containerRef}>
+	    <Markdown rehypePlugins={[rehypeRaw]}
                 components={{
                               img: ({ src, alt, title }) => (
                                 <span style={{display: 'inline'}}>
@@ -149,13 +173,12 @@ const AssistantMessage = ({ text }: { text: string }) => {
                                     <img
                                       src={src}
                                       alt={alt}
-                                      onClick={() => handleImgDoubleClick(src)}
                                       style={{
                                         cursor: "pointer",
                                         border: "1px solid #ccc",
                                       }}
                                     />
-                                    <span onClick={() => {setShowPrompt(!showPrompt);}} style={{userSelect: "none", position: "absolute", bottom: "5px", right: "0px",backgroundColor: showPrompt ? "gray" : "lightgray", width: '100px', height:"20px", borderRadius: '4px', cursor:'pointer',textAlign: "center", display: "inline-block", lineHeight: "20px", fontSize: "12px"}}>
+                                    <span style={{userSelect: "none", position: "absolute", bottom: "5px", right: "0px",backgroundColor: showPrompt ? "gray" : "lightgray", width: '100px', height:"20px", borderRadius: '4px', cursor:'pointer',textAlign: "center", display: "inline-block", lineHeight: "20px", fontSize: "12px"}}>
                                       {showPrompt ? "Hide Prompt" : "Show Prompt"}
                                     </span>
                                   </span>
@@ -166,7 +189,7 @@ const AssistantMessage = ({ text }: { text: string }) => {
                                 </span>
                               ),
         }}>{preprocessText(text)}</Markdown>
-    </div>    
+    </div>
   );
 };
 
