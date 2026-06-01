@@ -112,30 +112,31 @@ const StructPrompt = ({ prompt }: { prompt: string }) => {
 };
 
 const AssistantMessage = ({ text }: { text: string }) => {
-  if (!text) return null;
   const [showPrompt, setShowPrompt] = useState(false);
+
+  if (!text) return null;
+
   const preprocessText = (text: string) => {
     if (!text.includes('<iframe') && !text.includes('</iframe>')) {
       return text.replace(/\n/g, '<br />');
     }
     return text;
-  };  
+  };
 
   const handleImgDoubleClick = (src: string) => {
     const popupOverlay = document.getElementById('popupOverlay');
     const imageFrame = document.getElementById('imageFrame');
     const videoFrame = document.getElementById('videoFrame');
-    const popupContent = document.getElementById('popupContent');    
+    const popupContent = document.getElementById('popupContent');
+    if (!popupOverlay || !imageFrame || !videoFrame || !popupContent) return;
 
     (imageFrame as HTMLImageElement).src = src;
     (popupContent as HTMLIFrameElement).className = 'popup-content-video';
-    if (popupOverlay){
-      popupOverlay.style.display = 'flex';
-      (imageFrame as HTMLImageElement).style.display = 'flex';
-      (imageFrame as HTMLImageElement).style.width = '670px';
-      (imageFrame as HTMLImageElement).style.height = '670px';
-      (videoFrame as HTMLIFrameElement).style.display = 'none';
-    }
+    popupOverlay.style.display = 'flex';
+    (imageFrame as HTMLImageElement).style.display = 'flex';
+    (imageFrame as HTMLImageElement).style.width = '670px';
+    (imageFrame as HTMLImageElement).style.height = '670px';
+    (videoFrame as HTMLIFrameElement).style.display = 'none';
   }
 
   return (  
