@@ -144,25 +144,26 @@ const AssistantMessage = ({ text }: { text: string }) => {
 	    <Markdown rehypePlugins={[rehypeRaw]}         
                 components={{
                               img: ({ src, alt, title }) => (
-                                <>
-                                  <div style={{position: "relative", display: "inline-block"}}>
+                                <span style={{display: 'inline'}}>
+                                  <span style={{position: "relative", display: "inline-block"}}>
                                     <img
                                       src={src}
                                       alt={alt}
-                                      onDoubleClick={() => handleImgDoubleClick(src)}
+                                      onClick={() => handleImgDoubleClick(src)}
                                       style={{
                                         cursor: "pointer",
                                         border: "1px solid #ccc",
                                       }}
-                                    />                                              
-                                    <div onClick={() => {setShowPrompt(!showPrompt);}} style={{userSelect: "none", position: "absolute", bottom: "5px", right: "0px",backgroundColor: showPrompt ? "gray" : "lightgray", width: '100px', height:"20px", borderRadius: '4px', cursor:'pointer',textAlign: "center"}}>
-                                      {showPrompt ? "Hide Prompt" : "Show Prompt"}                    
-                                    </div>
-                                  </div>
-                                  <div style={{display: showPrompt ? 'flex' : 'none', border: "1px solid #ccc", borderRadius: '4px', padding: '5px', marginTop: '5px', backgroundColor: 'lightgray'}}>
+                                    />
+                                    <span onClick={() => {setShowPrompt(!showPrompt);}} style={{userSelect: "none", position: "absolute", bottom: "5px", right: "0px",backgroundColor: showPrompt ? "gray" : "lightgray", width: '100px', height:"20px", borderRadius: '4px', cursor:'pointer',textAlign: "center", display: "inline-block", lineHeight: "20px", fontSize: "12px"}}>
+                                      {showPrompt ? "Hide Prompt" : "Show Prompt"}
+                                    </span>
+                                  </span>
+                                  <br />
+                                  <span style={{display: showPrompt ? 'block' : 'none', border: "1px solid #ccc", borderRadius: '4px', padding: '5px', marginTop: '5px', backgroundColor: 'lightgray'}}>
                                     <StructPrompt prompt={title} />
-                                  </div>
-                                </>
+                                  </span>
+                                </span>
                               ),
         }}>{preprocessText(text)}</Markdown>
     </div>    
