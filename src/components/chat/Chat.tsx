@@ -102,13 +102,13 @@ const StructPrompt = ({ prompt }: { prompt: string }) => {
   const sentences = prompt.split('.').filter(sentence => sentence.trim() !== '');
 
   return  (
-      <ul>
+      <span style={{display: 'block', margin: 0, padding: 0}}>
         {sentences.map((sentence, index) => (
-          <li key={index}>
+          <span key={index} style={{display: 'list-item', marginLeft: '20px'}}>
             {sentence.trim()+'.'}
-          </li>
+          </span>
         ))}
-      </ul>);
+      </span>);
 };
 
 const AssistantMessage = ({ text }: { text: string }) => {
