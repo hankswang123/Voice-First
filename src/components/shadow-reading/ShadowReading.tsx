@@ -37,15 +37,6 @@ function selectWordsToBlank(sentence: string, difficulty: Difficulty = 'easy'): 
   return { blankedIndices, words };
 }
 
-interface WordDefinition {
-  word: string;
-  phonetic: string;
-  meanings: Array<{
-    partOfSpeech: string;
-    definitions: Array<{ definition: string; example: string | null }>;
-  }>;
-}
-
 interface ShadowReadingProps {
   audioCaptions: Array<{ time: number; text: string }>;
   audioRef: React.RefObject<HTMLAudioElement | null>;
@@ -84,11 +75,6 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
   const [blankValidation, setBlankValidation] = useState<Map<number, ('correct' | 'wrong' | 'empty')[]>>(new Map());
   const [showSuccess, setShowSuccess] = useState(false);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const [wordDefinition, setWordDefinition] = useState<WordDefinition | null>(null);
-  const [overlayPos, setOverlayPos] = useState<{ top: number; left: number } | null>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const definitionCacheRef = useRef<Map<string, WordDefinition>>(new Map());
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
 
   // Voice recording state for encouraging speaking practice
@@ -514,77 +500,6 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
     if (nextRef) nextRef.current = goToNext;
   }, [advanceNext, goToPrev, goToNext, advanceRef, prevRef, nextRef]);
 
-  // Word selection handler for dictionary lookup
-  const handleWordLookup = useCallback(async (word: string, rect: DOMRect) => {
-    // Cancel any pending hide
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-
-    const cleanWord = word.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
-    if (!cleanWord || cleanWord.length < 2) return;
-
-    setSelectedWord(cleanWord);
-    setOverlayPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
-
-    // Check cache first
-    if (definitionCacheRef.current.has(cleanWord)) {
-      setWordDefinition(definitionCacheRef.current.get(cleanWord)!);
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/dictionary/${encodeURIComponent(cleanWord)}`);
-      if (res.ok) {
-        const data = await res.json();
-        definitionCacheRef.current.set(cleanWord, data);
-        setWordDefinition(data);
-      } else {
-        setWordDefinition(null);
-      }
-    } catch {
-      setWordDefinition(null);
-    }
-  }, []);
-
-  // Mouse up handler for word selection
-  useEffect(() => {
-    if (!isActive) return;
-
-    const handleMouseUp = () => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim() || '';
-      if (text && text.length < 30) {
-        const range = selection?.getRangeAt(0);
-        if (range) {
-          const rect = range.getBoundingClientRect();
-          handleWordLookup(text, rect);
-        }
-      }
-    };
-
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.toString().trim() === '') {
-        // Start hide timer when selection is cleared
-        hideTimerRef.current = setTimeout(() => {
-          setSelectedWord(null);
-          setWordDefinition(null);
-          setOverlayPos(null);
-        }, 1000);
-      }
-    };
-
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('selectionchange', handleSelectionChange);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    };
-  }, [isActive, handleWordLookup]);
-
   useEffect(() => {
     if (!isActive) return;
 
@@ -840,26 +755,6 @@ const ShadowReading: React.FC<ShadowReadingProps> = ({
       {isWaiting && displayIndex < englishCaptions.length - 1 && !isFillBlankMode && (
         <div className={styles.waitIndicator}>
           Press Space to continue...
-        </div>
-      )}
-      {selectedWord && overlayPos && (
-        <div className={styles.wordOverlay} style={{ top: overlayPos.top, left: overlayPos.left }}>
-          <div className={styles.wordTitle}>
-            {selectedWord}
-            {wordDefinition?.phonetic && <span className={styles.phonetic}> {wordDefinition.phonetic}</span>}
-          </div>
-          {wordDefinition?.meanings?.map((m, i) => (
-            <div key={i} className={styles.meaning}>
-              <span className={styles.pos}>{m.partOfSpeech}</span>
-              {m.definitions.map((d, j) => (
-                <div key={j} className={styles.def}>
-                  {d.definition}
-                  {d.example && <span className={styles.example}> "{d.example}"</span>}
-                </div>
-              ))}
-            </div>
-          ))}
-          {!wordDefinition && <div className={styles.loading}>Looking up...</div>}
         </div>
       )}
     </div>
