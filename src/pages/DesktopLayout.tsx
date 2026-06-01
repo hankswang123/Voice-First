@@ -4865,6 +4865,7 @@ export function DesktopLayout() {
       <FloatingMagazineList
         magazines={displayedMagazines}
         onSelectMagazine={loadMagazineByName}
+        currentMagazineName={currentMagazineId}
       />
     </div>
   );

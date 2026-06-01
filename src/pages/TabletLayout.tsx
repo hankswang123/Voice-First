@@ -4267,6 +4267,7 @@ export function TabletLayout() {
       <FloatingMagazineList
         magazines={displayedMagazines}
         onSelectMagazine={loadMagazineByName}
+        currentMagazineName={currentMagazineId}
       />
     </div>
   );

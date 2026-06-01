@@ -96,6 +96,24 @@
   background: #e8edf2;
 }
 
+.item.current {
+  background: #e3f2fd;
+  font-weight: 600;
+  color: #1a73e8;
+}
+
+.item.current:hover {
+  background: #bbdefb;
+}
+
+.checkmark {
+  display: inline-block;
+  margin-right: 6px;
+  color: #1a73e8;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .empty {
   padding: 16px 14px;
   text-align: center;

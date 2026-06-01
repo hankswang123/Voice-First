@@ -10,9 +10,10 @@ interface DisplayedMagazine {
 interface FloatingMagazineListProps {
   magazines: DisplayedMagazine[];
   onSelectMagazine: (name: string) => void;
+  currentMagazineName?: string;
 }
 
-const FloatingMagazineList: React.FC<FloatingMagazineListProps> = ({ magazines, onSelectMagazine }) => {
+const FloatingMagazineList: React.FC<FloatingMagazineListProps> = ({ magazines, onSelectMagazine, currentMagazineName }) => {
   const [expanded, setExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -54,10 +55,11 @@ const FloatingMagazineList: React.FC<FloatingMagazineListProps> = ({ magazines, 
             magazines.map(m => (
               <div
                 key={m.name}
-                className={styles.item}
+                className={`${styles.item} ${m.name === currentMagazineName ? styles.current : ''}`}
                 onClick={() => handleSelect(m.name)}
                 title={m.name}
               >
+                {m.name === currentMagazineName && <span className={styles.checkmark}>✓</span>}
                 {m.displayName}
               </div>
             ))
