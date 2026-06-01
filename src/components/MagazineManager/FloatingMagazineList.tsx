@@ -59,8 +59,8 @@ const FloatingMagazineList: React.FC<FloatingMagazineListProps> = ({ magazines, 
                 onClick={() => handleSelect(m.name)}
                 title={m.name}
               >
-                {m.name === currentMagazineName && <span className={styles.checkmark}>✓</span>}
                 {m.displayName}
+                {m.name === currentMagazineName && <span className={styles.checkmark}>✓</span>}
               </div>
             ))
           )}

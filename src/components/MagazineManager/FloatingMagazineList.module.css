@@ -87,9 +87,9 @@
   font-size: 13px;
   color: #333;
   transition: background 0.1s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .item:hover {
@@ -108,10 +108,11 @@
 
 .checkmark {
   display: inline-block;
-  margin-right: 6px;
+  margin-left: 6px;
   color: #1a73e8;
   font-weight: 700;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .empty {
