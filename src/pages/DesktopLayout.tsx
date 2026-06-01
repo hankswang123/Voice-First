@@ -2414,7 +2414,24 @@ export function DesktopLayout() {
 
         (searchBox as HTMLInputElement).value = ''; // Clear the search box
       });
-    }    
+
+      // Also close popup when clicking the overlay background (outside content)
+      popupOverlay.addEventListener('click', (e) => {
+        if (e.target === popupOverlay) {
+          (videoFrame as HTMLIFrameElement).src = '';
+          popupOverlay.style.display = 'none';
+          if(flashcardsContainer){
+            (flashcardsContainer as HTMLDivElement).style.display = 'none';
+          }
+          if(shadowContainer){
+            (shadowContainer as HTMLDivElement).style.display = 'none';
+            isShadowModeRef.current = false;
+            setIsShadowMode(false);
+          }
+          (searchBox as HTMLInputElement).value = '';
+        }
+      });
+    }
 
     if( closeKeywords && floatingKeywords && openKeywords) { 
       // Close the popup and stop the video
