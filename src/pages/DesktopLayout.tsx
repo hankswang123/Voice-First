@@ -165,6 +165,7 @@ export function DesktopLayout() {
   const floatingButtonRef = useRef(null);
   const leftRef = useRef<HTMLDivElement | null>(null);
   const rightRef = useRef<HTMLDivElement | null>(null);
+  const loadVersionRef = useRef(0); // Guards against concurrent loadMagazineByName calls
 
   const [numPages, setNumPages] = useState<number>();
   const containerRef = useRef<HTMLDivElement>(null); // Ref for the scrollable container
@@ -314,11 +315,9 @@ export function DesktopLayout() {
       setAudioExisting({ magzine: magazine });
     };
 
-    // Only load magazine when accessToken is available (after login)
-    // This prevents double-loading caused by accessToken changing from null to token
-    if (accessToken) {
-      loadLastMagazine();
-    }
+    // Always load magazine — loadLastMagazine handles fallback when accessToken is null
+    // (duplicate useEffect removed, so no double-loading risk)
+    loadLastMagazine();
   }, [magzines, accessToken]);
   /* dynamic detect pdf resource  */
 
@@ -722,8 +721,7 @@ export function DesktopLayout() {
     setAudioExisting(); // Call the async function
   }, []);*/
 
-  /* dynamic detect pdf resource  */
-  useEffect(() => { if (magzines.length) setAudioExisting(); }, [magzines]);
+  /* Scripts now loaded exclusively via loadLastMagazine → setAudioExisting (removed duplicate useEffect to fix race condition) */
 
   // Check if there are any keywords with count > 0
   // Keywords icon display control
@@ -780,6 +778,7 @@ export function DesktopLayout() {
   // Core magazine loading logic — reused by dropdown and floating quick-switch
   const loadMagazineByName = async (newMagzine: string) => {
     const client = clientRef.current;
+    const version = ++loadVersionRef.current; // Capture version to detect stale calls
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
     setCurrentMagazineId(newMagzine);
@@ -801,6 +800,7 @@ export function DesktopLayout() {
     }
 
     const res: any = await response.json();
+    if (version !== loadVersionRef.current) return; // Stale — a newer load started
     const audioExisting = res.audioExisting;
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
@@ -831,6 +831,7 @@ export function DesktopLayout() {
         setNewAudioCaptions( await transformAudioScripts({magzine: newMagzine}) );
 
         const newInstructions = await buildInstructions({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return; // Stale
         setNewInstructions( newInstructions );
 
         client.updateSession({ instructions: newInstructions });
@@ -847,9 +848,12 @@ export function DesktopLayout() {
 
       if( res.keywordsExisting === 'true' )
       {
-        setNewKeywords( await fetchKeywords({magzine: newMagzine}) );
+        const kw = await fetchKeywords({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return;
+        setNewKeywords(kw);
       }else{
         const keywords = await genKeywords({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return;
         setNewKeywords(keywords);
       }
 
@@ -873,6 +877,7 @@ export function DesktopLayout() {
     if( res.flashcardsExisting === 'true'){
       console.log("Flashcards for magzine:", newMagzine);
       const flashcards = await getFlashcards({magzine: newMagzine});
+      if (version !== loadVersionRef.current) return;
       console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     } else {
@@ -1716,9 +1721,13 @@ export function DesktopLayout() {
     if (!audio) return;
 
     const updateProgress = () => {
+      // Skip state updates while user is selecting text to prevent re-render from destroying selection
+      if (isSelectingCaptionRef.current) return;
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) return;
       if (audio.duration) {
         setProgress((audio.currentTime / audio.duration) * 100);
-        setCurrentTime(audio.currentTime);     
+        setCurrentTime(audio.currentTime);
       }
     };
 
@@ -1749,8 +1758,10 @@ export function DesktopLayout() {
     };    
 
     const updateCaption = () => {
-      // Skip updates while user is selecting text
+      // Skip updates while user is selecting text or if there's an active selection in the caption
       if (isSelectingCaptionRef.current) return;
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) return;
 
       const currentTime = audio.currentTime;
 
@@ -2109,17 +2120,26 @@ export function DesktopLayout() {
   };  
 
   const handleMouseUp = (e: MouseEvent) => {
+    // Save selection BEFORE state updates trigger re-renders (re-renders destroy browser selection)
+    const savedSelection = window.getSelection();
+    let savedText = '';
+    let savedRange: Range | null = null;
+    if (savedSelection && savedSelection.rangeCount > 0) {
+      savedText = savedSelection.toString().trim().replace(/\n/g, ' ');
+      savedRange = savedSelection.getRangeAt(0).cloneRange();
+    }
+
     setIsDragging(false);
     setIsProgressDragging(false);
     setIsSplitterDragging(false);
 
     const splitter = document.getElementById('splitter');
-    splitter.style.backgroundColor = 'lightgray';    
+    splitter.style.backgroundColor = 'lightgray';
 
     document.body.style.userSelect = 'auto'; // Restore text selection
     //document.body.classList.remove('no-select'); // Remove no-select class after dragging
     const menu = document.getElementById("contextMenu");
-    const selectedText = window.getSelection().toString().trim().replace(/\n/g, ' ');
+    const selectedText = savedText;
     //Max length supported by OpenAI API is 4096 for TTS model
     if(selectedText.length >= 4096){ return; }
   
@@ -2145,8 +2165,8 @@ export function DesktopLayout() {
 
     if (selectedText) {
 
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0).getBoundingClientRect();
+      // Use saved range for positioning (current selection may have been destroyed by re-render)
+      const range = savedRange ? savedRange.getBoundingClientRect() : window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
 
       menu.style.display = "block";
       const computedStyle = window.getComputedStyle(menu);

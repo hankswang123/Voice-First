@@ -56,6 +56,15 @@ let cachedMagzines = null;
 // Cache for audio_scripts.txt to avoid duplicate fetches during magazine loading
 const audioScriptsCache = new Map();
 
+// Clear cached scripts for a specific magazine (or all if no argument)
+export function clearAudioScriptsCache(magzine) {
+  if (magzine) {
+    audioScriptsCache.delete(magzine);
+  } else {
+    audioScriptsCache.clear();
+  }
+}
+
 export async function fetchMagzinesDynamic() {
   if (cachedMagzines) return cachedMagzines;
   try {
@@ -76,8 +85,8 @@ export async function fetchMagzinesDynamic() {
 }
 
 // To fetch the audio scripts from the public/play folder (cached)
-async function fetchAudioScripts({magzine} = {magzine: magzines[0]}) {
-    if (audioScriptsCache.has(magzine)) {
+async function fetchAudioScripts({magzine, forceRefresh} = {magzine: magzines[0], forceRefresh: false}) {
+    if (!forceRefresh && audioScriptsCache.has(magzine)) {
         return audioScriptsCache.get(magzine);
     }
     const response = await fetch(`./play/${magzine}/audio_scripts.txt`);

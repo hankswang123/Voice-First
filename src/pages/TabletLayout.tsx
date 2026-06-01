@@ -161,6 +161,7 @@ export function TabletLayout() {
   const floatingButtonRef = useRef(null);
   const leftRef = useRef<HTMLDivElement | null>(null);
   const rightRef = useRef<HTMLDivElement | null>(null);
+  const loadVersionRef = useRef(0); // Guards against concurrent loadMagazineByName calls
 
   const [numPages, setNumPages] = useState<number>();
   const containerRef = useRef<HTMLDivElement>(null); // Ref for the scrollable container
@@ -265,12 +266,11 @@ export function TabletLayout() {
       console.log('Loading Magazine:', magazine, lastMagazine ? '(last read)' : '(default)');
       setpdfFilePath1(`/play/${magazine}/${magazine}.pdf`);
       setaudioFilePath1(`/play/${magazine}/${magazine}.wav`);
+      setAudioExisting({magzine: magazine});
     };
 
-    // Only load magazine when accessToken is available (after login)
-    if (accessToken) {
-      loadLastMagazine();
-    }
+    // Always load magazine — loadLastMagazine handles fallback when accessToken is null
+    loadLastMagazine();
   }, [dynamicMagzines, accessToken]);
 
   // Fetch displayed magazines for the floating quick-switch
@@ -613,15 +613,15 @@ export function TabletLayout() {
       {
         setIsScriptExisting(true);
 
-        const instructions = await buildInstructions();
-        setNewInstructions(instructions);   
+        const instructions = await buildInstructions({magzine});
+        setNewInstructions(instructions);
 
-        const captions = await transformAudioScripts();
-        setNewAudioCaptions(captions); 
+        const captions = await transformAudioScripts({magzine});
+        setNewAudioCaptions(captions);
 
         if( res.keywordsExisting === 'true' )
         {
-          setNewKeywords( await fetchKeywords({magzine: magzines[0]}) );      
+          setNewKeywords( await fetchKeywords({magzine}) );
         }      
         
       } else {
@@ -650,7 +650,7 @@ export function TabletLayout() {
     } 
     
     if(res.flashcardsExisting === 'true'){
-      const flashcards = await getFlashcards({magzine: magzines[0]});
+      const flashcards = await getFlashcards({magzine});
       //console.log('Flashcards Loaded:', flashcards);
       setFlashcards(flashcards);
     }else {
@@ -659,10 +659,7 @@ export function TabletLayout() {
     
   };  
 
-  // Initialize the keywords with the first magazine
-  useEffect(() => {
-    setAudioExisting(); // Call the async function
-  }, []);   
+  // Keywords are now loaded via loadLastMagazine → setAudioExisting (no duplicate useEffect needed)   
 
   // Check if there are any keywords with count > 0
   // Keywords icon display control
@@ -718,6 +715,7 @@ export function TabletLayout() {
   // Core magazine loading logic — reused by dropdown and floating quick-switch
   const loadMagazineByName = async (newMagzine: string) => {
     const client = clientRef.current;
+    const version = ++loadVersionRef.current; // Capture version to detect stale calls
 
     setNewMagzine(`${newMagzine.replace(/[_-]/g, " ")}`);
     setCurrentMagazineId(newMagzine);
@@ -738,6 +736,7 @@ export function TabletLayout() {
     }
 
     const res: any = await response.json();
+    if (version !== loadVersionRef.current) return; // Stale — a newer load started
     const audioExisting = res.audioExisting;
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
@@ -758,6 +757,7 @@ export function TabletLayout() {
         setNewAudioCaptions( await transformAudioScripts({magzine: newMagzine}) );
 
         const newInstructions = await buildInstructions({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return; // Stale
         setNewInstructions( newInstructions );
 
         client.updateSession({ instructions: newInstructions });
@@ -774,9 +774,12 @@ export function TabletLayout() {
 
       if( res.keywordsExisting === 'true' )
       {
-        setNewKeywords( await fetchKeywords({magzine: newMagzine}) );
+        const kw = await fetchKeywords({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return;
+        setNewKeywords(kw);
       }else{
         const keywords = await genKeywords({magzine: newMagzine});
+        if (version !== loadVersionRef.current) return;
         setNewKeywords(keywords);
       }
 
@@ -796,6 +799,7 @@ export function TabletLayout() {
 
     if( res.flashcardsExisting === 'true'){
       const flashcards = await getFlashcards({magzine: newMagzine});
+      if (version !== loadVersionRef.current) return;
       setFlashcards(flashcards);
     } else {
       setFlashcards([]);
@@ -1529,9 +1533,13 @@ export function TabletLayout() {
     if (!audio) return;
 
     const updateProgress = () => {
+      // Skip state updates while user is selecting text to prevent re-render from destroying selection
+      if (isSelectingCaptionRef.current) return;
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) return;
       if (audio.duration) {
         setProgress((audio.currentTime / audio.duration) * 100);
-        setCurrentTime(audio.currentTime);     
+        setCurrentTime(audio.currentTime);
       }
     };
 
@@ -1562,8 +1570,10 @@ export function TabletLayout() {
     };    
 
     const updateCaption = () => {
-      // Skip updates while user is selecting text
+      // Skip updates while user is selecting text or if there's an active selection in the caption
       if (isSelectingCaptionRef.current) return;
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) return;
 
       const currentTime = audio.currentTime;
 
@@ -1841,17 +1851,26 @@ export function TabletLayout() {
   let popupTimeout = null; // Global timeout variable to track dismissal
   let currentPopup = null; // To keep track of the current popup    
   const handleMouseUp = (e: MouseEvent) => {
+    // Save selection BEFORE state updates trigger re-renders (re-renders destroy browser selection)
+    const savedSelection = window.getSelection();
+    let savedText = '';
+    let savedRange: Range | null = null;
+    if (savedSelection && savedSelection.rangeCount > 0) {
+      savedText = savedSelection.toString().trim().replace(/\n/g, ' ');
+      savedRange = savedSelection.getRangeAt(0).cloneRange();
+    }
+
     setIsDragging(false);
     setIsProgressDragging(false);
     setIsSplitterDragging(false);
 
     const splitter = document.getElementById('splitter');
-    splitter.style.backgroundColor = 'lightgray';    
+    splitter.style.backgroundColor = 'lightgray';
 
     document.body.style.userSelect = 'auto'; // Restore text selection
     //document.body.classList.remove('no-select'); // Remove no-select class after dragging
     const menu = document.getElementById("contextMenu");
-    const selectedText = window.getSelection().toString().trim().replace(/\n/g, ' ');
+    const selectedText = savedText;
     //Max length supported by OpenAI API is 4096 for TTS model
     if(selectedText.length >= 4096){ return; }
   
@@ -1877,8 +1896,8 @@ export function TabletLayout() {
 
     if (selectedText) {
 
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0).getBoundingClientRect();
+      // Use saved range for positioning (current selection may have been destroyed by re-render)
+      const range = savedRange ? savedRange.getBoundingClientRect() : window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
 
       menu.style.display = "block";
       const computedStyle = window.getComputedStyle(menu);
