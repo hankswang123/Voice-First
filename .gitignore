@@ -154,3 +154,6 @@ start.vbs
 
 # Git worktrees
 .worktrees/
+
+# Security audit reports (contain plaintext findings — never commit)
+SECURITY_AUDIT_*.md
