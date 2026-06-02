@@ -1,0 +1,66 @@
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 12px;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scoreCount {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.score {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #fff;
+  animation: scoreCount 0.4s ease;
+}
+
+.score.great { color: #4CAF50; }
+.score.good { color: #FFC107; }
+.score.fair { color: #FF9800; }
+.score.poor { color: #f44336; }
+
+.stars {
+  font-size: 2rem;
+  margin: 8px 0;
+  letter-spacing: 4px;
+}
+
+.star {
+  color: #555;
+  transition: color 0.3s ease;
+}
+
+.star.active {
+  color: #FFD700;
+}
+
+.feedback {
+  color: #fff;
+  font-size: 1.1rem;
+  margin-top: 8px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin-top: 12px;
+}

@@ -1,15 +1,17 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import styles from './Flashcards.module.css';
-import { Volume2, Square, Globe } from 'react-feather';
+import { Volume2, Square, Globe, Mic, MicOff } from 'react-feather';
 
 import { RealtimeClient } from '../../lib/realtime/index.js';
+import { useVoiceRecognition, PronunciationResult } from './useVoiceRecognition';
+import PronunciationScore from './PronunciationScore';
 
 // Optional: accept props if you already have external data
 interface Card {
   front: string;
   back: string;
-  front_translation?: string;   // added
-  back_translation?: string;    // added  
+  front_translation?: string;
+  back_translation?: string;
 }
 interface FlashcardsProps {
   cards?: Card[];
@@ -17,35 +19,36 @@ interface FlashcardsProps {
 }
 
 export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
-  // You can replace this with actual data or fetch from a file
-  // Fallback data if no cards prop is provided  
-  //console.log('Flashcards cards:', cards);
   const data: Card[] = cards && cards.length
     ? cards
     : [
-        { 
-          front: "Flashcard 1: How is the name 'markhor' pronounced?", 
+        {
+          front: "Flashcard 1: How is the name 'markhor' pronounced?",
           back: "MAR-kor.",
           front_translation: "卡片1：'markhor' 怎么读？",
-          back_translation: "发音：MAR-kor" 
+          back_translation: "发音：MAR-kor"
         },
-        { 
-          front: "Flashcard 2: How is the name 'oryx' pronounced?", 
-          back: "OR-iks.", 
-          front_translation: "卡片2：'oryx' 怎么读？", 
-          back_translation: "发音：OR-iks" 
+        {
+          front: "Flashcard 2: How is the name 'oryx' pronounced?",
+          back: "OR-iks.",
+          front_translation: "卡片2：'oryx' 怎么读？",
+          back_translation: "发音：OR-iks"
         },
       ];
 
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+
   const clickTimeoutRef = useRef<number | null>(null);
   const hadSelectionAtMouseDownRef = useRef(false);
 
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false); // keeps Square icon logic consistent  
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Voice mode state
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceResult, setVoiceResult] = useState<PronunciationResult | null>(null);
 
   const cancelSpeak = useCallback(() => {
     try {
@@ -60,20 +63,39 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
 
   const card = React.useMemo(() => data[index], [data, index]);
 
-  // Current side translation text (already prepared in Card[])
+  // Get the text the child should speak (front side of card)
+  const expectedText = React.useMemo(() => {
+    // Extract just the word/phrase from the front side
+    // e.g., "Flashcard 1: How is the name 'markhor' pronounced?" → "markhor"
+    const match = card.front.match(/'([^']+)'/);
+    return match ? match[1] : card.front;
+  }, [card]);
+
   const currentSideTranslation = React.useMemo(() => {
     return flipped ? (card.back_translation || '') : (card.front_translation || '');
   }, [flipped, card]);
 
+  // Voice recognition hook
+  const {
+    isRecording,
+    isProcessing,
+    toggleRecording,
+  } = useVoiceRecognition({
+    realtimeClient,
+    expectedText,
+    onResult: useCallback((result: PronunciationResult) => {
+      setVoiceResult(result);
+      // Auto-flip to show answer after scoring
+      if (!flipped) {
+        setTimeout(() => setFlipped(true), 500);
+      }
+    }, [flipped]),
+  });
+
   const handleTranslateToggle = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    // If translation text is preloaded, just toggle; keep a brief async frame if you want Square flash
-    if (!currentSideTranslation) {
-      // No translation available; optionally you could disable the button instead.
-      return;
-    }
+    if (!currentSideTranslation) return;
     if (!showTranslation) {
-      // Simulate short loading phase only if you want Square to appear
       setIsTranslating(true);
       requestAnimationFrame(() => {
         setShowTranslation(true);
@@ -82,41 +104,22 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
     } else {
       setShowTranslation(false);
     }
-  }, [showTranslation, currentSideTranslation]);  
+  }, [showTranslation, currentSideTranslation]);
 
-  /* SpeechSynthesisUtterance quality suck, use Realtime API instead */
-  /*
-  const speakCurrent = useCallback(() => {
-    const text = flipped ? card.back : card.front;
-    if (!text || !window.speechSynthesis) return;
-    cancelSpeak();
-    const utter = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => /Google|Microsoft|Natural|Neural/i.test(v.name));
-    if (preferred) utter.voice = preferred;
-    utter.rate = 1;
-    utter.pitch = 1;
-    utter.onend = () => setIsSpeaking(false);
-    utter.onerror = () => setIsSpeaking(false);
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utter);
-  }, [flipped, card, cancelSpeak]);  */
-
-  //Speak Aloud the current card via Realtime API
+  // Speak Aloud via Realtime API
   const speakCurrent = useCallback(() => {
     const text = flipped ? card.back : card.front;
     if (!text || !window.speechSynthesis) return;
 
-    if(realtimeClient.isConnected()){
+    if (realtimeClient?.isConnected()) {
       realtimeClient.sendUserMessageContent([
         {
           type: `input_text`,
           text: `Read Aloud: ${text} with Casual and child-friendly，Cheerful, warm tone. only output the read aloud content`,
         },
-        ]);  
+      ]);
     }
-
-  }, [flipped, card, cancelSpeak]);    
+  }, [flipped, card, realtimeClient]);
 
   useEffect(() => {
     return () => {
@@ -124,12 +127,12 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
         window.clearTimeout(clickTimeoutRef.current);
       }
     };
-  }, []);  
+  }, []);
 
-  const cardRef = useRef<HTMLDivElement|null>(null);  
+  const cardRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     cardRef.current?.focus();
-  }, [index, data.length]);  
+  }, [index, data.length]);
 
   const hasActiveSelection = () => {
     const sel = window.getSelection();
@@ -138,7 +141,6 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
     return sel.toString().trim().length > 0;
   };
 
-    // Immediate flip helper - also hide translation when flipping
   const flipNow = () => {
     if (showTranslation) setShowTranslation(false);
     if (isTranslating) setIsTranslating(false);
@@ -159,15 +161,12 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
   };
 
   const handleMouseDown = () => {
-    // Snapshot whether a selection existed BEFORE this click clears it
     hadSelectionAtMouseDownRef.current = hasActiveSelection();
-  };  
+  };
 
- const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // If there WAS a selection at mousedown, skip flipping (even though click cleared it)
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (hadSelectionAtMouseDownRef.current) {
       hadSelectionAtMouseDownRef.current = false;
-      // Cancel any pending flip timeout
       if (clickTimeoutRef.current) {
         window.clearTimeout(clickTimeoutRef.current);
         clickTimeoutRef.current = null;
@@ -175,7 +174,6 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
       return;
     }
 
-    // Double click (detail > 1) => cancel pending single-click flip
     if (e.detail > 1) {
       if (clickTimeoutRef.current) {
         window.clearTimeout(clickTimeoutRef.current);
@@ -184,22 +182,21 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
       return;
     }
 
-    // Schedule delayed flip to allow time for a possible second click (double-click)
     if (clickTimeoutRef.current) {
       window.clearTimeout(clickTimeoutRef.current);
     }
     clickTimeoutRef.current = window.setTimeout(() => {
       clickTimeoutRef.current = null;
-      // Re-check (user might have dragged to select)
       if (hasActiveSelection()) return;
       flipNow();
     }, 180);
-  };  
+  };
 
   const next = useCallback(() => {
     setFlipped(false);
     if (showTranslation) setShowTranslation(false);
     if (isTranslating) setIsTranslating(false);
+    setVoiceResult(null);
     setIndex(i => (i + 1) % data.length);
   }, [data.length, showTranslation, isTranslating]);
 
@@ -207,10 +204,26 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
     setFlipped(false);
     if (showTranslation) setShowTranslation(false);
     if (isTranslating) setIsTranslating(false);
+    setVoiceResult(null);
     setIndex(i => (i - 1 + data.length) % data.length);
   }, [data.length, showTranslation, isTranslating]);
 
-  //const card = data[index];
+  const dismissScore = useCallback(() => {
+    setVoiceResult(null);
+  }, []);
+
+  const toggleVoiceMode = useCallback(() => {
+    setVoiceMode(v => {
+      if (v) {
+        // Turning off: stop recording if active
+        if (isRecording) {
+          toggleRecording();
+        }
+        setVoiceResult(null);
+      }
+      return !v;
+    });
+  }, [isRecording, toggleRecording]);
 
   return (
     <div className={styles.root}>
@@ -222,9 +235,22 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
-        //aria-label="Flashcard"
         aria-label={`Flashcard ${index + 1} of ${data.length}`}
       >
+        {/* Voice hint when voice mode is active */}
+        {voiceMode && !voiceResult && !isProcessing && (
+          <div className={styles.voiceHint}>
+            {isRecording ? '🎤 Listening...' : 'Say the word on the card'}
+          </div>
+        )}
+
+        {/* Processing indicator */}
+        {isProcessing && (
+          <div className={styles.processingIndicator}>
+            Scoring<span className={styles.processingDot}>...</span>
+          </div>
+        )}
+
         <div className={`${styles.face} ${styles.front}`}>
           {card.front}
           {showTranslation && !flipped && card.front_translation && (
@@ -238,12 +264,31 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
           )}
         </div>
 
+        {/* Pronunciation Score Overlay */}
+        {voiceResult && (
+          <PronunciationScore result={voiceResult} onDismiss={dismissScore} />
+        )}
+
+        {/* Voice mode toggle (microphone) */}
+        <button
+          type="button"
+          className={`${styles.micButton} ${voiceMode ? styles.active : ''}`}
+          aria-label={voiceMode ? 'Disable voice mode' : 'Enable voice mode'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleVoiceMode();
+          }}
+        >
+          {voiceMode ? <Mic size={18} /> : <MicOff size={18} />}
+        </button>
+
+        {/* Existing voice button (Read Aloud) */}
         <button
           type="button"
           className={`${styles.voiceButton} ${isSpeaking ? styles.speaking : ''}`}
           aria-label={isSpeaking ? 'Stop reading' : 'Read this card aloud'}
           onClick={(e) => {
-            e.stopPropagation(); // prevent triggering flip
+            e.stopPropagation();
             if (isSpeaking) {
               cancelSpeak();
             } else {
@@ -254,11 +299,11 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
           {isSpeaking ? <Square size={18} /> : <Volume2 size={18} />}
         </button>
 
-        {/* Translate Button (uses Globe; Square when "translating") */}
+        {/* Translate Button */}
         <button
           type="button"
           className={styles.translateButton}
-            aria-label={showTranslation ? 'Hide translation' : 'Show translation'}
+          aria-label={showTranslation ? 'Hide translation' : 'Show translation'}
           onClick={handleTranslateToggle}
           disabled={!currentSideTranslation}
         >
