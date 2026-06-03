@@ -141,7 +141,14 @@ export function TabletLayout() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProgressDragging, setIsProgressDragging] = useState(false);
   const [isSplitterDragging, setIsSplitterDragging] = useState(false);
-  const [currentCaption, setCurrentCaption] = useState(''); // State to display current caption
+  // Structured caption state — see DesktopLayout.tsx for the full rationale. Short version:
+  // declarative <span> render with stable keys lets React reuse text nodes, so a live text
+  // Selection survives ~4/sec highlight transitions; an earlier dangerouslySetInnerHTML
+  // approach destroyed selection on every timeupdate.
+  type CaptionView = { words: string[]; activeIdx: number; translation: string | null };
+  const EMPTY_CAPTION: CaptionView = { words: [], activeIdx: -1, translation: null };
+  const [captionView, setCaptionView] = useState<CaptionView>(EMPTY_CAPTION);
+  const currentCaption = captionView.words.join(' ') + (captionView.translation ? ' ' + captionView.translation : '');
   const [totalDuration, setTotalDuration] = useState(0); // State to store total duration
   const [currentTime, setCurrentTime] = useState(0); // State to store current play time
   const [isCaptionVisible, setIsCaptionVisible] = useState(false); // State to manage caption visibility
@@ -1570,7 +1577,7 @@ export function TabletLayout() {
     };    
 
     const updateCaption = () => {
-      // Skip updates while user is selecting text or if there's an active selection in the caption
+      // Skip updates while user is selecting text or if there's an active selection in the caption.
       if (isSelectingCaptionRef.current) return;
       const sel = window.getSelection();
       if (sel && sel.toString().length > 0) return;
@@ -1589,43 +1596,34 @@ export function TabletLayout() {
         const translationCaption = audioCaptions.current[currentCaptionIndex - 1];
         const wordsWithTiming = splitCaptionIntoWords(currentCaption, nextCaption?.time);
 
-        // Find the active word
-        const currentWord = wordsWithTiming.find(
+        // Find the active word's index — we use it for the className lookup in JSX.
+        const activeIdx = wordsWithTiming.findIndex(
           (word, index) =>
-            currentTime >= word.startTime && currentTime < word.endTime ||
-            (index === 0 && currentTime < word.endTime) // Special case for the first word
+            (currentTime >= word.startTime && currentTime < word.endTime) ||
+            (index === 0 && currentTime < word.endTime)
         );
 
-        if (currentWord) {
-          // Skip update if the highlighted word hasn't changed
-          const wordKey = currentWord.word + '|' + currentCaptionIndex;
+        if (activeIdx !== -1) {
+          // Skip update if the highlighted word hasn't changed.
+          const wordKey = wordsWithTiming[activeIdx].word + '|' + currentCaptionIndex;
           if (wordKey === lastHighlightedWordRef.current) return;
           lastHighlightedWordRef.current = wordKey;
 
-          // Highlight the active word
-          const highlightedCaption = wordsWithTiming
-            .map((word) =>
-              word === currentWord
-                ? ` <span style="border-radius: 4px; color: #00FFFF; display: inline-block; margin: 0 1px;">${word.word}</span> `
-                : ` <span style="display: inline; margin: 0 1px;">${word.word}</span> `
-            )
-            .join(' ');
-
-          let html = highlightedCaption;
-          if(showTranslationRef.current && translationCaption?.text){
-            html += '<br />' + translationCaption.text;
-          } else if(showTranslationRef.current && !translationCaption?.text){
-            html += '<br /><span style="color: #888; font-style: italic; font-size: 0.9em;">Translation not available</span>';
+          let translation: string | null = null;
+          if (showTranslationRef.current) {
+            translation = translationCaption?.text || 'Translation not available';
           }
 
-          // Update DOM directly first — preserves text selection
-          const el = document.getElementById('captionDisplay');
-          if (el) el.innerHTML = html;
-          // Only sync React state when no selection is active (state update triggers re-render which destroys selection)
-          if (!isSelectingCaptionRef.current) setCurrentCaption(html);
+          // Single declarative state update — React reconciles the keyed span list and only
+          // flips the active span's className. Selection inside the caption survives.
+          setCaptionView({
+            words: wordsWithTiming.map(w => w.word),
+            activeIdx,
+            translation,
+          });
         }
       }
-    };   
+    };
 
     const handleLoadedMetadata = () => {
       setTotalDuration(audio.duration);
@@ -3941,15 +3939,34 @@ export function TabletLayout() {
           <div className="captionsize" style={{display: isCaptionVisible? 'none' : 'flex'}}>Show caption to adjust it's size</div>
         </div>
         {/* Add a div to display the current caption */}
-        {isCaptionVisible && !isShadowMode && ( 
+        {isCaptionVisible && !isShadowMode && (
           <div id='captionDisplay' className="caption-display"
-               dangerouslySetInnerHTML={{ __html: currentCaption }}
                style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1', userSelect: 'text' }}
                onClick={() => { /*toggleAudio()*/ }}
                onMouseDown={() => { isSelectingCaptionRef.current = true; }}
                onMouseUp={() => { setTimeout(() => { isSelectingCaptionRef.current = false; }, 0); }}
-          ></div> )
-        } 
+          >
+            {/* Keyed span list — React reuses text nodes, selection survives highlight updates. */}
+            {captionView.words.map((w, i) => (
+              <span
+                key={`w-${i}`}
+                className={i === captionView.activeIdx ? 'caption-word active' : 'caption-word'}
+              >
+                {w}{' '}
+              </span>
+            ))}
+            {captionView.translation && (
+              <>
+                <br />
+                <span
+                  className={captionView.translation === 'Translation not available' ? 'caption-translation-missing' : 'caption-translation'}
+                >
+                  {captionView.translation}
+                </span>
+              </>
+            )}
+          </div> )
+        }
 
         <Button
                 label={'Flashcards'}

@@ -50,7 +50,29 @@
     white-space: normal; /* Prevent breaking within spans */
     margin: 0 1px; /* Optional: Add some spacing between words */
     word-spacing: -5px; /* Decrease space between words */
-  }  
+  }
+
+  /* Per-word spans — base styling. Mirrors DesktopLayout.scss. */
+  .caption-display .caption-word {
+    display: inline;
+    margin: 0 1px;
+  }
+
+  /* Active (currently-spoken) word — replaces the prior inline cyan style. */
+  .caption-display .caption-word.active {
+    display: inline-block;
+    border-radius: 4px;
+    color: #00FFFF;
+    margin: 0 1px;
+  }
+
+  .caption-display .caption-translation { }
+
+  .caption-display .caption-translation-missing {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9em;
+  }
 
   .hidden-button {
     position: absolute;

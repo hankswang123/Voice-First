@@ -145,7 +145,17 @@ export function DesktopLayout() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProgressDragging, setIsProgressDragging] = useState(false);
   const [isSplitterDragging, setIsSplitterDragging] = useState(false);
-  const [currentCaption, setCurrentCaption] = useState(''); // State to display current caption
+  // Structured caption state — one source of truth for the caption display.
+  //   words: tokens to render in order; activeIdx: which one to highlight; translation: optional second line.
+  //   We render this declaratively via .map() with stable keys so React reuses span DOM nodes across
+  //   highlight transitions. That lets the user's text Selection survive re-renders, which an earlier
+  //   dangerouslySetInnerHTML approach destroyed every ~250ms timeupdate. See feature/caption-declarative-render.
+  type CaptionView = { words: string[]; activeIdx: number; translation: string | null };
+  const EMPTY_CAPTION: CaptionView = { words: [], activeIdx: -1, translation: null };
+  const [captionView, setCaptionView] = useState<CaptionView>(EMPTY_CAPTION);
+  // Plain-text projection of the caption for downstream consumers (translate, syntax analysis).
+  // Kept in sync with captionView via a derived value below — no separate setter needed.
+  const currentCaption = captionView.words.join(' ') + (captionView.translation ? ' ' + captionView.translation : '');
   const [totalDuration, setTotalDuration] = useState(0); // State to store total duration
   const [currentTime, setCurrentTime] = useState(0); // State to store current play time
   const [isCaptionVisible, setIsCaptionVisible] = useState(false); // State to manage caption visibility
@@ -821,7 +831,7 @@ export function DesktopLayout() {
       setCurrentTime(0);
       if(isPlaying){toggleAudio();}
 
-      setCurrentCaption('');
+      setCaptionView(EMPTY_CAPTION);
       lastHighlightedWordRef.current = '';
       if( res.scriptExisting === 'true' )
       {
@@ -867,7 +877,7 @@ export function DesktopLayout() {
       if(isPlaying){setIsPlaying(false);}
 
       setIsScriptExisting(false);
-      setCurrentCaption('');
+      setCaptionView(EMPTY_CAPTION);
       setNewInstructions( basicInstructions );
       client.updateSession({ instructions: basicInstructions });
 
@@ -1758,7 +1768,9 @@ export function DesktopLayout() {
     };    
 
     const updateCaption = () => {
-      // Skip updates while user is selecting text or if there's an active selection in the caption
+      // Skip updates while user is selecting text or if there's an active selection in the caption.
+      // Without these guards, every timeupdate (~4/sec) would call setCaptionView and trigger a re-render
+      // that, while React-reconciler-friendly, can still race with the user's selection gesture.
       if (isSelectingCaptionRef.current) return;
       const sel = window.getSelection();
       if (sel && sel.toString().length > 0) return;
@@ -1777,43 +1789,36 @@ export function DesktopLayout() {
         const translationCaption = audioCaptions.current[currentCaptionIndex - 1];
         const wordsWithTiming = splitCaptionIntoWords(currentCaption, nextCaption?.time);
 
-        // Find the active word
-        const currentWord = wordsWithTiming.find(
+        // Find the active word's index (not just the word object) — we need it for the className lookup.
+        const activeIdx = wordsWithTiming.findIndex(
           (word, index) =>
-            currentTime >= word.startTime && currentTime < word.endTime ||
+            (currentTime >= word.startTime && currentTime < word.endTime) ||
             (index === 0 && currentTime < word.endTime) // Special case for the first word
         );
 
-        if (currentWord) {
-          // Skip update if the highlighted word hasn't changed
-          const wordKey = currentWord.word + '|' + currentCaptionIndex;
+        if (activeIdx !== -1) {
+          // Skip update if the highlighted word hasn't changed — avoids needless setState churn.
+          const wordKey = wordsWithTiming[activeIdx].word + '|' + currentCaptionIndex;
           if (wordKey === lastHighlightedWordRef.current) return;
           lastHighlightedWordRef.current = wordKey;
 
-          // Highlight the active word
-          const highlightedCaption = wordsWithTiming
-            .map((word) =>
-              word === currentWord
-                ? ` <span style="border-radius: 4px; color: #00FFFF; display: inline-block; margin: 0 1px;">${word.word}</span> `
-                : ` <span style="display: inline; margin: 0 1px;">${word.word}</span> `
-            )
-            .join(' ');
-
-          let html = highlightedCaption;
-          if(showTranslationRef.current && translationCaption?.text){
-            html += '<br />' + translationCaption.text;
-          } else if(showTranslationRef.current && !translationCaption?.text){
-            html += '<br /><span style="color: #888; font-style: italic; font-size: 0.9em;">Translation not available</span>';
+          // Compute translation line. The 'Translation not available' fallback preserves prior UX.
+          let translation: string | null = null;
+          if (showTranslationRef.current) {
+            translation = translationCaption?.text || 'Translation not available';
           }
 
-          // Update DOM directly first — preserves text selection
-          const el = document.getElementById('captionDisplay');
-          if (el) el.innerHTML = html;
-          // Only sync React state when no selection is active (state update triggers re-render which destroys selection)
-          if (!isSelectingCaptionRef.current) setCurrentCaption(html);
+          // Single declarative state update. React reconciles the span list by key — the text nodes
+          // for non-active words are reused, only the active span's className flips. Any live Selection
+          // anchored inside a reused text node survives the render.
+          setCaptionView({
+            words: wordsWithTiming.map(w => w.word),
+            activeIdx,
+            translation,
+          });
         }
       }
-    };   
+    };
 
     const handleLoadedMetadata = () => {
       setTotalDuration(audio.duration);
@@ -4521,15 +4526,40 @@ export function DesktopLayout() {
           <div className="captionsize" style={{display: isCaptionVisible? 'none' : 'flex'}}>Show caption to adjust it's size</div>
         </div>
         {/* Add a div to display the current caption */}
-        { isScriptExisting && isCaptionVisible && !isShadowMode && ( 
+        { isScriptExisting && isCaptionVisible && !isShadowMode && (
           <div id='captionDisplay' className="caption-display"
-               dangerouslySetInnerHTML={{ __html: currentCaption }}
                style={{ fontSize: '2.95em', marginTop: '20px', width: `${captionWidth}%`, opacity: '1', userSelect: 'text' }}
                onClick={() => { /*toggleAudio()*/ }}
                onMouseDown={() => { isSelectingCaptionRef.current = true; }}
                onMouseUp={() => { setTimeout(() => { isSelectingCaptionRef.current = false; }, 0); }}
-          ></div> )
-        } 
+          >
+            {/*
+              Render words as a stable, keyed list. React's reconciler keeps these <span> nodes
+              across re-renders and only flips className on the active one — so any live text
+              Selection inside the caption survives mid-flight highlight updates and parent
+              re-renders alike. This replaces an earlier dangerouslySetInnerHTML approach that
+              wiped the selection every audio timeupdate (~4/sec).
+            */}
+            {captionView.words.map((w, i) => (
+              <span
+                key={`w-${i}`}
+                className={i === captionView.activeIdx ? 'caption-word active' : 'caption-word'}
+              >
+                {w}{' '}
+              </span>
+            ))}
+            {captionView.translation && (
+              <>
+                <br />
+                <span
+                  className={captionView.translation === 'Translation not available' ? 'caption-translation-missing' : 'caption-translation'}
+                >
+                  {captionView.translation}
+                </span>
+              </>
+            )}
+          </div> )
+        }
 
         {/* Show/Hide Captions Button */}
         <div className="content-caption" style={{userSelect: 'none'}}>

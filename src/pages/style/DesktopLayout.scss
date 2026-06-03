@@ -49,7 +49,33 @@
     white-space: normal; /* Prevent breaking within spans */
     margin: 0 1px; /* Optional: Add some spacing between words */
     word-spacing: -5px; /* Decrease space between words */
-  }  
+  }
+
+  /* Per-word spans — base styling. Inline-block matches the legacy markup so wrapping behaves the same. */
+  .caption-display .caption-word {
+    display: inline;
+    margin: 0 1px;
+  }
+
+  /* Active (currently-spoken) word — preserves the legacy cyan highlight without an inline style attribute. */
+  .caption-display .caption-word.active {
+    display: inline-block;
+    border-radius: 4px;
+    color: #00FFFF;
+    margin: 0 1px;
+  }
+
+  /* Translation line beneath the active caption (when "Show translation" is toggled on). */
+  .caption-display .caption-translation {
+    /* inherits caption color/size; kept as a hook for future styling */
+  }
+
+  /* Fallback shown when no translation is available for the current line. */
+  .caption-display .caption-translation-missing {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9em;
+  }
 
   .hidden-button {
     position: absolute;
