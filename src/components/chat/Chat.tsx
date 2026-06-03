@@ -13,6 +13,7 @@ import { Mic, MicOff, Send, Trash2 } from 'react-feather';
 
 import { detectDevice } from '../../utils/detectDevice';
 import { useChatHistory } from '../../hooks/useChatHistory';
+import { isInternalProtocolUserPrompt, isPronunciationScoreReply } from './chatFilters.js';
 
 
 let apiKey = localStorage.getItem('tmp::voice_api_key');
@@ -43,6 +44,10 @@ type MessageProps = {
 const UserMessage = ({ text }: { text: string }) => {
 
   if (!text) return null;
+  // Hide internal-protocol prompts (Read Aloud, Translate, wordcard,
+  // SyntaxAnalyze, Pronunciation scoring) — these are app-internal turns
+  // the user shouldn't see as conversational chat.
+  if (isInternalProtocolUserPrompt(text)) return null;
 
   const preprocessText = (text: string) => {
 
@@ -155,6 +160,9 @@ const AssistantMessage = ({ text }: { text: string }) => {
   }, []);
 
   if (!text) return null;
+  // Hide pronunciation-scoring JSON replies — they're a protocol payload,
+  // the score itself is rendered as a floating overlay on the flashcard.
+  if (isPronunciationScoreReply(text)) return null;
 
   const preprocessText = (text: string) => {
     if (!text.includes('<iframe') && !text.includes('</iframe>')) {

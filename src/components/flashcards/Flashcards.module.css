@@ -265,12 +265,23 @@
 
 .processingIndicator {
   position: absolute;
-  top: 50%;
+  /* Pin to the top, matching the .voiceHint position so both voice-mode
+     statuses live in the same region. Avoids overlapping the question text
+     in the centre of the card. The two are mutually exclusive at runtime
+     (voiceHint when listening, processingIndicator when waiting for AI),
+     so they share the same visual slot at the top. */
+  top: 8px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  font-size: 1.2rem;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  pointer-events: none;
   z-index: 5;
+  animation: fadeIn 0.3s ease;
+  white-space: nowrap;
 }
 
 .processingDot {

@@ -213,17 +213,21 @@ export default function Flashcards({ cards, realtimeClient }: FlashcardsProps) {
   }, []);
 
   const toggleVoiceMode = useCallback(() => {
-    setVoiceMode(v => {
-      if (v) {
-        // Turning off: stop recording if active
-        if (isRecording) {
-          toggleRecording();
-        }
-        setVoiceResult(null);
-      }
-      return !v;
-    });
-  }, [isRecording, toggleRecording]);
+    // Side effects must NOT live inside a setState updater function.
+    // React 18 StrictMode invokes updater functions twice in dev to surface
+    // impurity, which would cause toggleRecording() to fire twice and the
+    // second call would throw "Already recording: please call .pause() first".
+    // Compute the next state in the event handler (not double-invoked),
+    // run the side effect once, then setState with a plain value.
+    const turningOn = !voiceMode;
+    if (turningOn) {
+      if (!isRecording) toggleRecording();
+    } else {
+      if (isRecording) toggleRecording();
+      setVoiceResult(null);
+    }
+    setVoiceMode(turningOn);
+  }, [voiceMode, isRecording, toggleRecording]);
 
   return (
     <div className={styles.root}>
