@@ -33,6 +33,21 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - Search Videos by youtube.com integrated by [SERPAPI](https://serpapi.com/search-api)
 - Search News by google integrated by [SERPAPI](https://serpapi.com/search-api)
 - Chat history persistence (text, voice, images) saved to SQLite database
+- **User management**: register / login / logout with bcrypt-hashed passwords, JWT access tokens, email verification flow, forgot-password / reset-password pages, and per-user preferences (e.g. last-read magazine). Localhost auto-login is enabled for dev convenience.
+- **Magazine Manager**: per-user magazine library with upload, display/hide toggling, and a floating quick-switch list that highlights the currently open magazine.
+- **Shadow Reading**: read-aloud practice mode with three difficulty levels (easy / medium / hard), live fill-in-the-blank that runs in parallel with audio playback, recording for self-review, an always-visible toolbar with play/pause toggle, and a quick-help overlay.
+- **Voice Flashcards**: voice mode for flashcards with end-to-end pronunciation scoring via the Realtime API. Shows a scoring indicator while audio is processed, parses the model's score back out of the response, and includes a timeout safety net so the indicator never gets stuck.
+- **Quick Chinese definition**: right-click any word in the script/PDF view to get an inline Chinese gloss without leaving the page.
+
+## What's documented under `docs/superpowers/`
+
+The repo carries the design specs and execution plans for each major feature. Useful when picking up a thread or auditing a deviation:
+
+- `specs/2026-05-22-realtime-ga-migration-design.md` + `plans/2026-05-22-realtime-ga-migration.md` — Beta → GA migration of the Realtime API library
+- `specs/2026-05-27-shadow-reading-fill-blank-design.md` + plan — shadow reading + fill-blank
+- `specs/2026-05-28-user-management-design.md` + plan — auth, JWT, email verify, password reset
+- `specs/2026-06-02-voice-flashcards-design.md` + plan — voice mode for flashcards with pronunciation scoring
+- `specs/2026-06-02-voice-roleplay-design.md`, `voice-shadow-reading-design.md`, `voice-interactive-story-design.md`, `voice-family-interaction-design.md` — draft specs for upcoming voice features (not yet implemented)
 
 ## An Education Scenario which Audio Copilot could help
 
@@ -56,6 +71,7 @@ Audio Copilot enables the interaction with content during playback on-going. It 
 - [SERP API Key](https://serpapi.com/manage-api-key) - for youtube video and google news search
 - [ZhipuAI API Key](https://open.bigmodel.cn/) - for ZhipuAI integration
 - [DeepSeek API Key](https://platform.deepseek.com/) - for DeepSeek chat
+- `JWT_ACCESS_SECRET` - any sufficiently long random string; signs the access tokens issued by the auth flow. Falls back to a hard-coded dev secret if unset, **so this MUST be set in any non-local deployment.**
 
 <img src="/readme/audio-copilot.png" width="800" />
 <img src="/readme/audio-copilot-2.png" width="800" />

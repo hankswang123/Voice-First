@@ -39,20 +39,33 @@ npm run build
 
   - Static asset serving for production builds
   - API endpoints for SERPAPI (news/video search), Recraft.ai (image generation), ZhipuAI, DeepSeek
-  - Magazine listing from `public/play/` directories
+  - Magazine listing from `public/play/` directories (basic + enriched variants; visibility flags persisted to `data/magazine-config.json`)
+  - Magazine upload/management endpoints (multipart via `multer`)
   - Audio file existence checks
   - Word card image caching in `src/wordCard` (temp) and `public/wordCard` (permanent)
   - WebSocket relay for OpenAI Realtime API mounted at `/realtime`
   - Chat history REST API (`/api/chat/sessions/*`) backed by SQLite
+  - Auth REST API mounted at `/api/auth/*` (see Authentication section)
 - **`db/chatHistory.js`**: SQLite database layer using `better-sqlite3`. Stores sessions, messages, and Realtime API items (including base64-encoded audio). Database file auto-created at `data/chat_history.db` on first run.
+- **`db/auth.js`**: SQLite schema and queries for users, email verification codes, password reset tokens, refresh tokens, and per-user preferences. Shares the same `data/chat_history.db` connection as `chatHistory.js`. Passwords hashed with `bcrypt` (10 rounds).
+- **`routes/auth.js`**: Express router for `/api/auth/*` (register, verify-email, resend-code, login, refresh, logout, forgot-password, reset-password, me, preferences GET/PUT).
+- **`routes/chat.js`**: Authenticated chat routes — every endpoint runs through the `authenticate` middleware so chat history is scoped to the logged-in user.
+- **`middleware/auth.js`**: Exports `authenticate` (required JWT bearer) and `requireAdmin` (role check). Reads `JWT_ACCESS_SECRET` from env; falls back to a dev secret only when unset.
 - **`relay-server/lib/relay.js`**: `RealtimeRelay` class that proxies WebSocket connections between browser and OpenAI Realtime API using the in-tree vendored library at `src/lib/realtime/` (see "Realtime library (vendored)" below)
 
 ### Frontend (React + TypeScript)
 
-- **`src/App.tsx`**: Entry point with device detection routing to `DesktopLayout` or `TabletLayout`
-- **`src/pages/DesktopLayout.tsx`** and **`TabletLayout.tsx`**: Main layouts containing audio player, PDF viewer, chat, and flashcards
+- **`src/App.tsx`**: Entry point with device detection routing to `DesktopLayout` or `TabletLayout`, plus a `react-router-dom` route table for the auth pages.
+- **`src/pages/DesktopLayout.tsx`** and **`TabletLayout.tsx`**: Main layouts containing audio player, PDF viewer, chat, and flashcards. `DesktopLayout` imports the tablet `Chat` component (the `chat_desktop/` variant is legacy — see "Key Patterns").
+- **`src/pages/LoginPage.tsx`, `RegisterPage.tsx`, `ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`, `VerifyEmailPage.tsx`**: Auth flow pages.
+- **`src/components/MagazineManager/`**: `MagazineManager.tsx` (full management table — upload / show / hide / delete) and `FloatingMagazineList.tsx` (compact quick-switch list with active-item highlight).
+- **`src/components/shadow-reading/ShadowReading.tsx`**: Read-aloud + fill-in-the-blank practice mode. Uses `WavRecorder` from the in-tree wavetools lib for self-review recording. Difficulty modes drive `selectWordsToBlank()`.
+- **`src/components/flashcards/`**: Flashcards UI (`Flashcards.tsx`), pronunciation score widget (`PronunciationScore.tsx`), score parser (`scoreParser.js` — extracts numeric scores from Realtime API text), and `useVoiceRecognition.ts` hook that orchestrates the WavRecorder + RealtimeClient pipeline.
+- **`src/components/chat/chatFilters.js`**: Centralized filters that drop internal protocol messages (e.g. system markers) from rendered chat. Imported by both desktop and tablet `Chat.tsx` so message rendering stays consistent across layouts. Tested under `__tests__/`.
 - **`src/utils/app_util.js`**: Magazine data management, keyword extraction, audio script transformation, and AI instruction building
+- **`src/utils/authApi.ts`**: Frontend API client for `/api/auth/*` (login, register, refresh, etc.) plus token storage helpers.
 - **`src/hooks/useChatHistory.ts`**: React hook for chat history persistence (load/save messages and Realtime API items)
+- **`src/hooks/usePdfLazyLoading.ts`**: Page-level lazy loading for large PDFs to keep first paint fast.
 - **`src/utils/chatHistoryApi.ts`**: Frontend API client for chat history endpoints
 - **`src/utils/audioSerializer.ts`**: Serialization of audio data (Int16Array/Blob URL to base64) for database storage
 
@@ -74,6 +87,15 @@ Required in `.env`:
 - `RECRAFT_API_KEY` and `RECRAFT_BASE_URL` - For image generation
 - `ZHIPUAI_API_KEY` - For ZhipuAI integration
 - `DEEPSEEK_API_KEY` and `DEEPSEEK_BASE_URL` - For DeepSeek chat
+- `JWT_ACCESS_SECRET` - HMAC secret for signing access tokens (`routes/auth.js`, `middleware/auth.js`). **Falls back to a hard-coded dev secret if unset — set this to a long random string in any non-local deployment.**
+
+## Authentication & User Management
+
+- Auth state lives in the same SQLite DB as chat history (`data/chat_history.db`). `db/auth.js` creates `users`, `email_verifications`, `password_reset_tokens`, `refresh_tokens`, and `user_preferences` tables on startup.
+- Access tokens are short-lived JWTs (15m); refresh tokens are stored server-side and exchanged via `POST /api/auth/refresh`.
+- `routes/chat.js` mounts `authenticate` on every chat endpoint, so chat history is automatically scoped to the authenticated user.
+- `user_preferences` is the persistence layer for things like "last-read magazine per user" — surfaced in the UI by remembering which magazine to reopen on next login.
+- **Localhost dev**: the app auto-logs-in on `localhost` to keep iteration fast. Don't rely on this in any test that exercises real auth.
 
 ## Realtime library (vendored)
 
@@ -104,8 +126,14 @@ Full migration history at `docs/superpowers/specs/2026-05-22-realtime-ga-migrati
 - Word card images are generated to `src/wordCard/` to avoid webpack hot-reload issues (public folder is monitored), then moved to `public/wordCard/` on next app start
 - PDF worker (`pdf.worker.min.mjs`) must be served from the same origin for deployment compatibility
 - Magazine list is fetched dynamically via `/api/magazines` endpoint, falling back to hardcoded list in `app_util.js`
+- Magazine display/visibility flags persist to `data/magazine-config.json` (file-based, not in SQLite). The `/api/magazines/enriched` endpoint joins folder stats with this config.
 - Voice commands trigger function calls in the realtime API (pause, resume, volume, skip, etc.)
 - Chat history is stored in SQLite (`data/chat_history.db`) with no automatic expiration; data persists until manually cleared
+- Chat history is scoped per user — every read/write goes through the JWT-authenticated routes in `routes/chat.js`
+- Chat message rendering uses centralized filters in `src/components/chat/chatFilters.js` so internal protocol messages (e.g. clickable-image markers like alt text `"Image Could not be loaded"`) are dropped uniformly across desktop and tablet layouts. **Add new filter logic there, not in the layout files.**
+- Chat image popup uses a `mouseup` listener (not `click`) on the message container — during streaming React-markdown re-renders, mousedown and mouseup can land on different IMG node instances, so the browser never synthesizes a click. See the inline comment in `src/components/chat/Chat.tsx` and commit `c13249b` for the rationale.
+- The `chat_desktop/` component is legacy; `DesktopLayout` imports the tablet `Chat` component to keep behaviour unified. Don't add new features to `chat_desktop/`.
+- Voice flashcards reuse the same vendored `RealtimeClient` as Audio Copilot. The pronunciation score comes back as plain text inside the model's response — `scoreParser.js` extracts it; `useVoiceRecognition.ts` owns the recording lifecycle and indicator timeout safety net.
 - The `data/` directory and database are auto-created on first server start
 - `prestart` hook automatically frees ports 3000/3001 before `npm start` using `kill-port`
 - `cross-env` with `NODE_OPTIONS=--openssl-legacy-provider` enables compatibility with Node.js v24+
