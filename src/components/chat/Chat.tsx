@@ -121,7 +121,18 @@ const AssistantMessage = ({ text }: { text: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Use event delegation — attach listeners to the container,
-  // not to elements inside react-markdown (which can break synthetic events)
+  // not to elements inside react-markdown (which can break synthetic events).
+  //
+  // We listen for `mouseup` instead of `click`. The reason is subtle: the AI
+  // chat panel re-renders frequently during streaming, and react-markdown
+  // creates a new <img> DOM node on every render of AssistantMessage. If a
+  // user's natural press-and-release happens to span a re-render window,
+  // mousedown lands on IMG_A and mouseup lands on a freshly-mounted IMG_B —
+  // the browser's click-synthesis algorithm requires both events on the same
+  // element, so no `click` event ever fires. `mouseup` fires reliably on
+  // whichever IMG is current at release time, which is the user's actual
+  // intent. (Tested 2026-06-03: pointerdown/mousedown/mouseup all fire on
+  // IMG with our diagnostics, click does not. See git log for full trace.)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -155,8 +166,10 @@ const AssistantMessage = ({ text }: { text: string }) => {
       }
     };
 
-    container.addEventListener('click', handleClick);
-    return () => container.removeEventListener('click', handleClick);
+    container.addEventListener('mouseup', handleClick);
+    return () => {
+      container.removeEventListener('mouseup', handleClick);
+    };
   }, []);
 
   if (!text) return null;
@@ -181,6 +194,7 @@ const AssistantMessage = ({ text }: { text: string }) => {
                                     <img
                                       src={src}
                                       alt={alt}
+                                      draggable={false}
                                       style={{
                                         cursor: "pointer",
                                         border: "1px solid #ccc",
