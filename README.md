@@ -78,6 +78,10 @@ The repo carries the design specs and execution plans for each major feature. Us
 
 This idea is implemented based on [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console) `<br>`
 
+## Known Limitations
+
+- **PDF image rendering for CJK educational materials**: pdf.js 5.3.93 (bundled with react-pdf v10) silently skips certain JPEG2000 (JPXDecode) images that use CMYK color space. This affects some pages in the `三(上)_*` magazine PDFs — text and vector outlines render fine, but background illustrations on affected pages appear blank. The same PDFs render correctly in Chrome's native PDF viewer. This is a pdf.js library-level limitation; potential workarounds include pre-converting PDFs to use RGB color space and standard JPEG images, or downgrading pdfjs-dist to 4.x.
+
 ## Issues solved
 
 - put 'fnm env --use-on-cd | Out-String | Invoke-Expression' to 'C:\Users\<YourUsername>\Documents\WindowsPowerShell\profile.ps1' to avoid run this command each time before 'npm start'
