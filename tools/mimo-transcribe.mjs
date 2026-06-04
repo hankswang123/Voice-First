@@ -113,12 +113,12 @@ function audioToBase64(filePath) {
 
   const workBuffer = fs.readFileSync(workFile);
   const base64 = workBuffer.toString('base64');
-  const result = { dataUrl: `data:audio/mpeg;base64,${base64}`, mime: 'audio/mpeg', sizeMB: (workBuffer.length / (1024 * 1024)).toFixed(1) };
-
-  // Clean up temp file
-  if (converted) {
-    try { fs.unlinkSync(workFile); } catch {}
-  }
+  const result = {
+    dataUrl: `data:audio/mpeg;base64,${base64}`,
+    mime: 'audio/mpeg',
+    sizeMB: (workBuffer.length / (1024 * 1024)).toFixed(1),
+    mp3Path: converted ? workFile : null,
+  };
 
   return result;
 }
@@ -245,7 +245,7 @@ async function main() {
     const fileSizeMB = (fs.statSync(audioFile).size / (1024 * 1024)).toFixed(1);
 
     try {
-      const { dataUrl, mime, sizeMB: audioMB } = audioToBase64(audioFile);
+      const { dataUrl, mime, sizeMB: audioMB, mp3Path } = audioToBase64(audioFile);
       const b64MB = (Buffer.byteLength(dataUrl) / (1024 * 1024)).toFixed(1);
       process.stdout.write(`${name} (${audioMB}MB, ${mime}, base64=${b64MB}MB)... `);
       if (parseFloat(b64MB) > 48) {
@@ -263,7 +263,17 @@ async function main() {
 
       const scriptPath = path.join(dir, SCRIPT_NAME);
       fs.writeFileSync(scriptPath, transcript.trim() + '\n', 'utf8');
-      console.log(`OK (${transcript.length} chars)`);
+
+      // Save MP3 if audio was converted from M4A/MP4
+      if (mp3Path) {
+        const mp3Name = path.basename(audioFile, path.extname(audioFile)) + '.mp3';
+        const mp3Dest = path.join(dir, mp3Name);
+        fs.copyFileSync(mp3Path, mp3Dest);
+        try { fs.unlinkSync(mp3Path); } catch {}
+        console.log(`OK (${transcript.length} chars, saved ${mp3Name})`);
+      } else {
+        console.log(`OK (${transcript.length} chars)`);
+      }
       success++;
     } catch (err) {
       console.log(`FAILED: ${err.message}`);
