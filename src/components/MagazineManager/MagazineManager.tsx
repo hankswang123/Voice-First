@@ -8,6 +8,7 @@ interface MagazineInfo {
   hasAudio: boolean;
   hasScripts: boolean;
   hasFlashcards: boolean;
+  hasInfographic: boolean;
   displayed: boolean;
 }
 
@@ -77,6 +78,7 @@ const MagazineManager: React.FC<MagazineManagerProps> = ({ isOpen, onClose, onDi
                   <th>Audio</th>
                   <th>Scripts</th>
                   <th>Flash Cards</th>
+                  <th>Infographic</th>
                   <th>Displayed</th>
                 </tr>
               </thead>
@@ -102,6 +104,11 @@ const MagazineManager: React.FC<MagazineManagerProps> = ({ isOpen, onClose, onDi
                     <td>
                       <span className={m.hasFlashcards ? styles.checkIcon : styles.crossIcon}>
                         {m.hasFlashcards ? '✓' : '✗'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={m.hasInfographic ? styles.checkIcon : styles.crossIcon}>
+                        {m.hasInfographic ? '✓' : '✗'}
                       </span>
                     </td>
                     <td>

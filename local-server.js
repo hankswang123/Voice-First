@@ -136,6 +136,7 @@ app.get('/api/magazines/enriched', (req, res) => {
         );
         const hasScripts = fs.existsSync(path.join(dirPath, 'audio_scripts.txt'));
         const hasFlashcards = fs.existsSync(path.join(dirPath, 'flashcards.txt'));
+        const hasInfographic = fs.readdirSync(dirPath).some(f => f.endsWith('-Infographic.png'));
         const displayed = config.magazines[d.name]?.displayed ?? false;
         return {
           name: d.name,
@@ -143,6 +144,7 @@ app.get('/api/magazines/enriched', (req, res) => {
           hasAudio,
           hasScripts,
           hasFlashcards,
+          hasInfographic,
           displayed
         };
       })
@@ -601,18 +603,19 @@ app.get("/api/audio/check", async (req, res) => {
         const scriptPath = path.join(dirPath, 'audio_scripts.txt');
         const keywordsPath = path.join(dirPath, 'keywords.txt');
         const flashcardsPath = path.join(dirPath, 'flashcards.txt');
+        const hasInfographic = fs.readdirSync(dirPath).some(f => f.endsWith('-Infographic.png'));
 
         // Check if the audio file already exists
         if (( fs.existsSync(audioPath) || fs.existsSync(audioPath1) ) && fs.existsSync(scriptPath) && fs.existsSync(keywordsPath) && fs.existsSync(flashcardsPath)) {
-            res.json({audioExisting: 'true', scriptExisting: 'true', keywordsExisting: 'true', flashcardsExisting: 'true'});
+            res.json({audioExisting: 'true', scriptExisting: 'true', keywordsExisting: 'true', flashcardsExisting: 'true', infographicExisting: hasInfographic ? 'true' : 'false'});
         } else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )&&fs.existsSync(scriptPath)){
-            res.json({audioExisting: 'true', scriptExisting: 'true', keywordsExisting: 'false', flashcardsExisting: 'false'});
+            res.json({audioExisting: 'true', scriptExisting: 'true', keywordsExisting: 'false', flashcardsExisting: 'false', infographicExisting: hasInfographic ? 'true' : 'false'});
         }
-        else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )&&fs.existsSync(keywordsPath)){ 
-            res.json({audioExisting: 'true', scriptExisting: 'false', keywordsExisting: 'true', flashcardsExisting: 'false'});   
+        else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )&&fs.existsSync(keywordsPath)){
+            res.json({audioExisting: 'true', scriptExisting: 'false', keywordsExisting: 'true', flashcardsExisting: 'false', infographicExisting: hasInfographic ? 'true' : 'false'});
         }
-        else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )){ 
-            res.json({audioExisting: 'true', scriptExisting: 'false', keywordsExisting: 'false', flashcardsExisting: 'false'});                        
+        else if(( fs.existsSync(audioPath) || fs.existsSync(audioPath1) )){
+            res.json({audioExisting: 'true', scriptExisting: 'false', keywordsExisting: 'false', flashcardsExisting: 'false', infographicExisting: hasInfographic ? 'true' : 'false'});
         } else{res.json({audioExisting: 'false'});}
         
 

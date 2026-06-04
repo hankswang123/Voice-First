@@ -28,7 +28,7 @@ import { RealtimeClient, type ItemType } from '../lib/realtime/index.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut } from 'react-feather';
+import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut, Image } from 'react-feather';
 import { useAuth } from '../contexts/AuthContext';
 import { getPreferences, setPreference } from '../utils/authApi';
 
@@ -246,6 +246,7 @@ export function DesktopLayout() {
 
   const [isAudioExisting, setIsAudioExisting] = useState(false);
   const [isScriptExisting, setIsScriptExisting] = useState(false);
+  const [isInfographicExisting, setIsInfographicExisting] = useState(false);
   
   const [newAudioCaptions, setNewAudioCaptions] = useState([]);
   const audioCaptions = useRef(newAudioCaptions);
@@ -644,11 +645,12 @@ export function DesktopLayout() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const res: any = await response.json();      
+    const res: any = await response.json();
     const audioExisting = res.audioExisting;
+    setIsInfographicExisting(res.infographicExisting === 'true');
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
-      setIsAudioExisting(true);  
+      setIsAudioExisting(true);
 
       const placeholder = 'hello';
       const responseAudio: Response = await fetch(`/api/audio/get?magzine=${encodeURIComponent(magzine)}&word=${(placeholder)}`);    
@@ -707,7 +709,8 @@ export function DesktopLayout() {
     } else {
       setIsAudioExisting(false);
       setIsScriptExisting(false);
-      setNewInstructions(basicInstructions);   
+      setIsInfographicExisting(false);
+      setNewInstructions(basicInstructions);
 
       setNewAudioCaptions([]);
     } 
@@ -812,6 +815,7 @@ export function DesktopLayout() {
     const res: any = await response.json();
     if (version !== loadVersionRef.current) return; // Stale — a newer load started
     const audioExisting = res.audioExisting;
+    setIsInfographicExisting(res.infographicExisting === 'true');
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
       setIsAudioExisting(true);
@@ -877,6 +881,7 @@ export function DesktopLayout() {
       if(isPlaying){setIsPlaying(false);}
 
       setIsScriptExisting(false);
+      setIsInfographicExisting(false);
       setCaptionView(EMPTY_CAPTION);
       setNewInstructions( basicInstructions );
       client.updateSession({ instructions: basicInstructions });
@@ -2398,6 +2403,7 @@ export function DesktopLayout() {
     const searchBox = document.getElementById('searchBox');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     const shadowContainer = document.getElementById('shadowReadingContainer');
+    const infographicContainer = document.getElementById('infographicContainer');
 
     const closeKeywords = document.getElementById('closeKeywords');
     const floatingKeywords = document.getElementById('floatingKeywords');
@@ -2416,6 +2422,9 @@ export function DesktopLayout() {
           isShadowModeRef.current = false;
           setIsShadowMode(false);
         }
+        if(infographicContainer){
+          (infographicContainer as HTMLDivElement).style.display = 'none';
+        }
 
         (searchBox as HTMLInputElement).value = ''; // Clear the search box
       });
@@ -2432,6 +2441,9 @@ export function DesktopLayout() {
             (shadowContainer as HTMLDivElement).style.display = 'none';
             isShadowModeRef.current = false;
             setIsShadowMode(false);
+          }
+          if(infographicContainer){
+            (infographicContainer as HTMLDivElement).style.display = 'none';
           }
           (searchBox as HTMLInputElement).value = '';
         }
@@ -2510,6 +2522,10 @@ export function DesktopLayout() {
           const imageFrame = document.getElementById('imageFrame');
           if (imageFrame) {
             (imageFrame as HTMLImageElement).src = '';
+          }
+          const infographicContainer = document.getElementById('infographicContainer');
+          if (infographicContainer) {
+            (infographicContainer as HTMLDivElement).style.display = 'none';
           }
 
           if( popupOverlay.style.display === 'flex' ){
@@ -2852,7 +2868,51 @@ export function DesktopLayout() {
       audioRef.current.pause();
       setIsPlaying(false);
     }
-  };  
+  };
+
+  const toggleInfographic = () => {
+    const popupOverlay = document.getElementById('popupOverlay');
+    const infographicContainer = document.getElementById('infographicContainer');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    const shadowContainer = document.getElementById('shadowReadingContainer');
+    const videoFrame = document.getElementById('videoFrame');
+    const imageFrame = document.getElementById('imageFrame');
+    const popupContent = document.getElementById('popupContent');
+    if (!popupOverlay || !infographicContainer) return;
+
+    const isVisible =
+      popupOverlay.style.display === 'flex' &&
+      infographicContainer.style.display === 'flex';
+
+    if (isVisible) {
+      infographicContainer.style.display = 'none';
+      popupOverlay.style.display = 'none';
+      return;
+    }
+
+    (popupContent as HTMLElement).className = 'popup-content-shadow';
+    infographicContainer.style.display = 'flex';
+    if (flashcardsContainer) flashcardsContainer.style.display = 'none';
+    if (shadowContainer) {
+      shadowContainer.style.display = 'none';
+      isShadowModeRef.current = false;
+      setIsShadowMode(false);
+    }
+    if (videoFrame) (videoFrame as HTMLIFrameElement).style.display = 'none';
+    if (imageFrame) (imageFrame as HTMLImageElement).style.display = 'none';
+    popupOverlay.style.display = 'flex';
+
+    // Set the infographic image src
+    const img = infographicContainer.querySelector('img') as HTMLImageElement;
+    if (img) {
+      img.src = `/play/${currentMagazineId}/${currentMagazineId}-Infographic.png`;
+    }
+
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
   
   /*
    * Utility for search Videos by Youtube by addTool
@@ -4046,6 +4106,26 @@ export function DesktopLayout() {
               nextRef={shadowNextRef}
             />
           </div>
+          {/* Show Infographic here */}
+          <div id="infographicContainer"
+               style={{
+                display: 'none',
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#1a1a2e',
+                overflow: 'auto'
+              }}>
+            <img src="" alt="Infographic"
+                 style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '8px'
+                 }} />
+          </div>
           <iframe id="videoFrame" width="800" height="450" src="" allow="fullscreen" allowFullScreen style={{display: 'none'}}></iframe>
           <img id="imageFrame" src="" alt="Image"
                 onDoubleClick={() => {
@@ -4660,6 +4740,8 @@ export function DesktopLayout() {
             <div title='Show Flashcards'><Layers color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleFlashcards} /></div>
             <div><span className="separator">|</span></div>
             <div title='Shadow Reading / 影子跟读' style={{ opacity: isScriptExisting ? 1 : 0.4 }}><Mic color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleShadowReading} /></div>
+            <div><span className="separator" style={{userSelect: 'none', display: isInfographicExisting ? 'flex' : 'none' }}>|</span></div>
+            <div title='Infographic' style={{ opacity: isInfographicExisting ? 1 : 0.4, display: isInfographicExisting ? 'flex' : 'none' }}><Image color='blue' style={{ width: '17px', height: '17px' }} onClick={toggleInfographic} /></div>
             {/* Quiz featue is not ready yet
             <div><span className="separator">|</span></div>            
             <div title='Have a Quiz'><HelpCircle color='red' style={{ width: '17px', height: '17px' }} /></div>            

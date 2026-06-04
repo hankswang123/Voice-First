@@ -44,7 +44,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "prestart": "kill-port 3000 3001 || true",
+    "prestart": "kill-port 3000 3001 || true && cp -f node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs 2>/dev/null || true",
     "dev": "node local-server.js",
     "relay": "node relay-server/index.js",
     "start": "concurrently \"cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start\" \"nodemon local-server.js\"",

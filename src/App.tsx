@@ -11,16 +11,9 @@ import './App.scss';
 import { pdfjs } from 'react-pdf';
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import 'pdfjs-dist/build/pdf.worker.min.mjs';
 import { detectDevice } from './utils/detectDevice';
 
-/*
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();*/
-
-//workerSrc must be has to be set this way when deploying to render.com
+// Worker served from public/ — keep in sync via prestart script
 pdfjs.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`;
 
 console.log('pdfjs.version=', pdfjs.version);

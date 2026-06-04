@@ -28,7 +28,7 @@ import { RealtimeClient, type ItemType } from '../lib/realtime/index.js';
 
 import { WavRecorder, WavStreamPlayer } from '../lib/wavetools/index.js';
 
-import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut } from 'react-feather';
+import {GitBranch, Layers, AlignCenter, Key, Layout, Book, BookOpen, TrendingUp, X, Zap, Edit, Edit2, Play, Pause, Mic, MicOff, Plus, Minus, ArrowLeft, ArrowRight, Settings, Repeat, SkipBack, SkipForward, Globe, UserPlus, ZoomOut, ZoomIn, User, Volume, Upload, LogOut, Image } from 'react-feather';
 import { useAuth } from '../contexts/AuthContext';
 import { getPreferences, setPreference } from '../utils/authApi';
 
@@ -288,6 +288,7 @@ export function TabletLayout() {
   const [audioFilePath1, setaudioFilePath1] = useState('');
   const [isAudioExisting, setIsAudioExisting] = useState(false);
   const [isScriptExisting, setIsScriptExisting] = useState(false);
+  const [isInfographicExisting, setIsInfographicExisting] = useState(false);
 
   const [newAudioCaptions, setNewAudioCaptions] = useState([]);
   const audioCaptions = useRef(newAudioCaptions);
@@ -610,11 +611,12 @@ export function TabletLayout() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const res: any = await response.json();      
+    const res: any = await response.json();
     const audioExisting = res.audioExisting;
+    setIsInfographicExisting(res.infographicExisting === 'true');
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
-      setIsAudioExisting(true);  
+      setIsAudioExisting(true);
 
       if( res.scriptExisting === 'true' )
       {
@@ -651,7 +653,8 @@ export function TabletLayout() {
     } else {
       setIsAudioExisting(false);
       setIsScriptExisting(false);
-      setNewInstructions(basicInstructions);   
+      setIsInfographicExisting(false);
+      setNewInstructions(basicInstructions);
 
       setNewAudioCaptions([]);
     } 
@@ -745,6 +748,7 @@ export function TabletLayout() {
     const res: any = await response.json();
     if (version !== loadVersionRef.current) return; // Stale — a newer load started
     const audioExisting = res.audioExisting;
+    setIsInfographicExisting(res.infographicExisting === 'true');
     const basicInstructions = await buildInstructions({magzine: 'no_scripts'});
     if (audioExisting === 'true') {
       setIsAudioExisting(true);
@@ -798,6 +802,7 @@ export function TabletLayout() {
       setCurrentTime(0);
 
       setIsScriptExisting(false);
+      setIsInfographicExisting(false);
       setNewInstructions( basicInstructions );
       client.updateSession({ instructions: basicInstructions });
 
@@ -2077,6 +2082,7 @@ export function TabletLayout() {
     const videoFrame = document.getElementById('videoFrame');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
     const shadowContainer = document.getElementById('shadowReadingContainer');
+    const infographicContainer = document.getElementById('infographicContainer');
 
     const closeKeywords = document.getElementById('closeKeywords');
     const floatingKeywords = document.getElementById('floatingKeywords');
@@ -2095,6 +2101,9 @@ export function TabletLayout() {
           isShadowModeRef.current = false;
           setIsShadowMode(false);
         }
+        if(infographicContainer){
+          (infographicContainer as HTMLDivElement).style.display = 'none';
+        }
       });
 
       // Also close popup when clicking the overlay background (outside content)
@@ -2109,6 +2118,9 @@ export function TabletLayout() {
             (shadowContainer as HTMLDivElement).style.display = 'none';
             isShadowModeRef.current = false;
             setIsShadowMode(false);
+          }
+          if(infographicContainer){
+            (infographicContainer as HTMLDivElement).style.display = 'none';
           }
         }
       });
@@ -2183,6 +2195,10 @@ export function TabletLayout() {
           const imageFrame = document.getElementById('imageFrame');
           if (imageFrame) {
             (imageFrame as HTMLImageElement).src = '';
+          }
+          const infographicContainer = document.getElementById('infographicContainer');
+          if (infographicContainer) {
+            (infographicContainer as HTMLDivElement).style.display = 'none';
           }
 
           if( popupOverlay.style.display === 'flex' ){
@@ -2452,7 +2468,51 @@ export function TabletLayout() {
       audioRef.current.pause();
       setIsPlaying(false);
     }
-  };  
+  };
+
+  const toggleInfographic = () => {
+    const popupOverlay = document.getElementById('popupOverlay');
+    const infographicContainer = document.getElementById('infographicContainer');
+    const flashcardsContainer = document.getElementById('flashcardsContainer');
+    const shadowContainer = document.getElementById('shadowReadingContainer');
+    const videoFrame = document.getElementById('videoFrame');
+    const imageFrame = document.getElementById('imageFrame');
+    const popupContent = document.getElementById('popupContent');
+    if (!popupOverlay || !infographicContainer) return;
+
+    const isVisible =
+      popupOverlay.style.display === 'flex' &&
+      infographicContainer.style.display === 'flex';
+
+    if (isVisible) {
+      infographicContainer.style.display = 'none';
+      popupOverlay.style.display = 'none';
+      return;
+    }
+
+    (popupContent as HTMLElement).className = 'popup-content-shadow';
+    infographicContainer.style.display = 'flex';
+    if (flashcardsContainer) flashcardsContainer.style.display = 'none';
+    if (shadowContainer) {
+      shadowContainer.style.display = 'none';
+      isShadowModeRef.current = false;
+      setIsShadowMode(false);
+    }
+    if (videoFrame) (videoFrame as HTMLIFrameElement).style.display = 'none';
+    if (imageFrame) (imageFrame as HTMLImageElement).style.display = 'none';
+    popupOverlay.style.display = 'flex';
+
+    // Set the infographic image src
+    const img = infographicContainer.querySelector('img') as HTMLImageElement;
+    if (img) {
+      img.src = `/play/${currentMagazineId}/${currentMagazineId}-Infographic.png`;
+    }
+
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
   
   /*
    * Utility for search Videos by Youtube by addTool
@@ -3459,7 +3519,27 @@ export function TabletLayout() {
               nextRef={shadowNextRef}
             />
           </div>
-          {/* Show Youtube Video here */}              
+          {/* Show Infographic here */}
+          <div id="infographicContainer"
+               style={{
+                display: 'none',
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#1a1a2e',
+                overflow: 'auto'
+              }}>
+            <img src="" alt="Infographic"
+                 style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '8px'
+                 }} />
+          </div>
+          {/* Show Youtube Video here */}
           <iframe id="videoFrame" width="800" height="450" src="" allow="fullscreen" allowFullScreen style={{display: 'none'}}></iframe>
           {/* Show Image created here */} 
           <img id="imageFrame" src="" alt="Image"
@@ -3986,6 +4066,17 @@ export function TabletLayout() {
                 className='button'
                 disabled={!isScriptExisting}
         />
+
+        {isInfographicExisting && (
+          <Button
+                  label={'Infographic'}
+                  iconPosition={'start'}
+                  icon={Image}
+                  buttonStyle={'regular'}
+                  onClick={toggleInfographic}
+                  className='button'
+          />
+        )}
 
         {/* Show/Hide Captions Button */}
         <div className="content-caption" style={{userSelect: 'none'}}>

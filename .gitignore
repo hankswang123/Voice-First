@@ -157,3 +157,6 @@ start.vbs
 
 # Security audit reports (contain plaintext findings — never commit)
 SECURITY_AUDIT_*.md
+
+# Infographic images (generated, not source-controlled)
+public/play/**/*-Infographic.png
