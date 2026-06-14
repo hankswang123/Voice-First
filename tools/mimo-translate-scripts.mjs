@@ -143,6 +143,11 @@ async function main() {
     const blocks = parseScript(content);
     console.log(`${unit}: ${blocks.length} blocks`);
 
+    if (blocks.length === 0) {
+      console.log(`  ${unit}: already translated or unparseable, skipping\n`);
+      continue;
+    }
+
     if (dryRun) continue;
 
     // Batch translate (50 lines per batch to stay under token limits)

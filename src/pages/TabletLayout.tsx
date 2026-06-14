@@ -201,6 +201,10 @@ export function TabletLayout() {
   const lastHighlightedWordRef = useRef<string>('');
   const isSelectingCaptionRef = useRef(false);
   const endedHandlerRef = useRef<((this: HTMLAudioElement, ev: Event) => any) | null>(null);
+  // Audio playback optimization refs
+  const captionWordsCacheRef = useRef<Map<number, { words: { word: string; startTime: number; endTime: number }[]; duration: number }>>(new Map());
+  const lastProgressRef = useRef<number>(0);
+  const rafIdRef = useRef<number>(0);
   const [isLoop, setIsLoop] = useState(false);
 
   // Magazine management state
@@ -697,6 +701,8 @@ export function TabletLayout() {
 
   useEffect(() => {
     audioCaptions.current = newAudioCaptions; // Sync ref with the updated state
+    captionWordsCacheRef.current.clear(); // Invalidate word-split cache on caption change
+    lastHighlightedWordRef.current = ''; // Reset highlight tracking
   }, [newAudioCaptions]);  
 
   useEffect(() => {
@@ -1540,93 +1546,99 @@ export function TabletLayout() {
   }  
 
   //Update the progress bar and current time when the audio is playing
+  //Optimized: merged listeners, cached word splits, throttled progress, RAF-batched setState
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const updateProgress = () => {
-      // Skip state updates while user is selecting text to prevent re-render from destroying selection
-      if (isSelectingCaptionRef.current) return;
-      const sel = window.getSelection();
-      if (sel && sel.toString().length > 0) return;
-      if (audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
-        setCurrentTime(audio.currentTime);
-      }
+    const splitCaptionIntoWords = (caption: { text: string; time: number }, nextCaptionTime?: number) => {
+      const words = caption.text.split(' ');
+      const duration = nextCaptionTime ? nextCaptionTime - caption.time : 2;
+      const wordDuration = duration / words.length;
+      return words.map((word, index) => ({
+        word,
+        startTime: caption.time + index * wordDuration,
+        endTime: caption.time + (index + 1) * wordDuration,
+      }));
     };
 
-    interface Caption {
-      text: string;
-      time: number;
-    }
+    // Cached version: same caption index returns the same computed words
+    const getCachedWords = (captionIndex: number) => {
+      const cache = captionWordsCacheRef.current;
+      if (cache.has(captionIndex)) return cache.get(captionIndex)!;
+      const caption = audioCaptions.current[captionIndex];
+      const nextCaption = audioCaptions.current[captionIndex + 1];
+      const words = splitCaptionIntoWords(caption, nextCaption?.time);
+      const entry = { words, duration: nextCaption ? nextCaption.time - caption.time : 2 };
+      cache.set(captionIndex, entry);
+      return entry;
+    };
 
-    interface WordTiming {
-      word: string;
-      startTime: number;
-      endTime: number;
-    }
-
-    const splitCaptionIntoWords = (caption: Caption, nextCaptionTime?: number): WordTiming[] => {
-      const words = caption.text.split(' ');
-      //const words = caption.text.split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\w)\s/); // Preserve phrases
-
-      // Calculate duration based on the next caption or assume a default duration
-      const duration = nextCaptionTime ? nextCaptionTime - caption.time : 2; // Assume 2 seconds for the last caption
-      const wordDuration = duration / words.length; // Evenly distribute word timing
-
-      return words.map((word, index) => ({
-                        word,
-                        startTime: caption.time + index * wordDuration,
-                        endTime: caption.time + (index + 1) * wordDuration,
-                      }));
-    };    
-
-    const updateCaption = () => {
-      // Skip updates while user is selecting text or if there's an active selection in the caption.
+    const onTimeUpdate = () => {
+      // Single selection check — shared by both progress and caption logic
       if (isSelectingCaptionRef.current) return;
       const sel = window.getSelection();
-      if (sel && sel.toString().length > 0) return;
+      const hasSelection = sel && sel.toString().length > 0;
 
       const currentTime = audio.currentTime;
 
-      // Find the current caption
-      const currentCaptionIndex = audioCaptions.current.findIndex((caption, index) => {
-        const nextCaption = audioCaptions.current[index + 1];
+      // --- Progress: throttle to ~4 updates/sec, skip negligible changes ---
+      if (!hasSelection && audio.duration) {
+        const newProgress = (currentTime / audio.duration) * 100;
+        if (Math.abs(newProgress - lastProgressRef.current) >= 0.5) {
+          lastProgressRef.current = newProgress;
+          setProgress(newProgress);
+          setCurrentTime(currentTime);
+        }
+      }
+
+      // --- Caption: skip if user has active text selection ---
+      if (hasSelection) return;
+
+      // Find current caption (linear scan — fast for typical caption counts)
+      const captions = audioCaptions.current;
+      const currentCaptionIndex = captions.findIndex((caption, index) => {
+        const nextCaption = captions[index + 1];
         return currentTime >= caption.time && (!nextCaption || currentTime < nextCaption.time);
       });
 
-      if (currentCaptionIndex !== -1) {
-        const currentCaption = audioCaptions.current[currentCaptionIndex];
-        const nextCaption = audioCaptions.current[currentCaptionIndex + 1];
-        const translationCaption = audioCaptions.current[currentCaptionIndex - 1];
-        const wordsWithTiming = splitCaptionIntoWords(currentCaption, nextCaption?.time);
+      if (currentCaptionIndex === -1) return;
 
-        // Find the active word's index — we use it for the className lookup in JSX.
-        const activeIdx = wordsWithTiming.findIndex(
-          (word, index) =>
-            (currentTime >= word.startTime && currentTime < word.endTime) ||
-            (index === 0 && currentTime < word.endTime)
-        );
+      // Use cached word timing — avoids allocating new objects every 250ms
+      const { words: wordsWithTiming } = getCachedWords(currentCaptionIndex);
 
-        if (activeIdx !== -1) {
-          // Skip update if the highlighted word hasn't changed.
-          const wordKey = wordsWithTiming[activeIdx].word + '|' + currentCaptionIndex;
-          if (wordKey === lastHighlightedWordRef.current) return;
-          lastHighlightedWordRef.current = wordKey;
+      const activeIdx = wordsWithTiming.findIndex(
+        (word, index) =>
+          (currentTime >= word.startTime && currentTime < word.endTime) ||
+          (index === 0 && currentTime < word.endTime)
+      );
 
-          let translation: string | null = null;
-          if (showTranslationRef.current) {
-            translation = translationCaption?.text || 'Translation not available';
-          }
+      if (activeIdx === -1) return;
 
-          // Single declarative state update — React reconciles the keyed span list and only
-          // flips the active span's className. Selection inside the caption survives.
+      // Skip if highlighted word unchanged
+      const wordKey = wordsWithTiming[activeIdx].word + '|' + currentCaptionIndex;
+      if (wordKey === lastHighlightedWordRef.current) return;
+      lastHighlightedWordRef.current = wordKey;
+
+      let translation: string | null = null;
+      if (showTranslationRef.current) {
+        const translationCaption = captions[currentCaptionIndex - 1];
+        translation = translationCaption?.text || 'Translation not available';
+      }
+
+      // Batch via RAF to avoid multiple synchronous setState calls
+      const pendingWords = wordsWithTiming.map(w => w.word);
+      const pendingActiveIdx = activeIdx;
+      const pendingTranslation = translation;
+      if (!rafIdRef.current) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = 0;
           setCaptionView({
-            words: wordsWithTiming.map(w => w.word),
-            activeIdx,
-            translation,
+            words: pendingWords,
+            activeIdx: pendingActiveIdx,
+            translation: pendingTranslation,
           });
-        }
+        });
       }
     };
 
@@ -1634,14 +1646,17 @@ export function TabletLayout() {
       setTotalDuration(audio.duration);
     };
 
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('timeupdate', updateCaption);
+    // Single merged listener instead of two separate ones
+    audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('timeupdate', updateCaption);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = 0;
+      }
     };
   }, []);  
 

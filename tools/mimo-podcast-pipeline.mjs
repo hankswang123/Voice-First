@@ -103,7 +103,7 @@ function needsStep(dir, step, force) {
       const script = path.join(dir, 'audio_scripts.txt');
       if (!fileExists(script)) return false;
       const content = fs.readFileSync(script, 'utf8');
-      return !content.includes('Speaker 1:'); // not yet interleaved
+      return content.includes('发言人'); // still raw — not yet interleaved
     }
     case 'flashcards': return !fileExists(path.join(dir, 'flashcards.txt'));
     case 'keywords': return !fileExists(path.join(dir, 'keywords.txt'));
