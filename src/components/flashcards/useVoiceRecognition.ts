@@ -119,7 +119,14 @@ export function useVoiceRecognition({
     // begin() throws if a processor already exists; mirror the guard
     // used in DesktopLayout (only begin if processor is null).
     if (recorder.processor === null) {
-      await recorder.begin();
+      try {
+        await recorder.begin();
+      } catch (err) {
+        console.error('Microphone init failed:', err);
+        alert('No microphone detected. Please connect a microphone and try again.');
+        setIsRecording(false);
+        return;
+      }
     }
     let chunkCount = 0;
     await recorder.record((data: any) => {

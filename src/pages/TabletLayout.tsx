@@ -130,6 +130,10 @@ export function TabletLayout() {
 
   //hanks - Implementation of audio copilot
   const [isPlaying, setIsPlaying] = useState(false);
+  const isPlayingRef = useRef(false);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [captionWidth, setCaptionWidth] = useState(100);
@@ -765,7 +769,7 @@ export function TabletLayout() {
       audioRef.current.currentTime = 0;
       setProgress(0);
       setCurrentTime(0);
-      if(isPlaying){toggleAudio();}
+      if(isPlayingRef.current){await toggleAudio();}
 
       if( res.scriptExisting === 'true' )
       {
@@ -806,6 +810,8 @@ export function TabletLayout() {
       audioRef.current.currentTime = 0;
       setProgress(0);
       setCurrentTime(0);
+
+      if(isPlayingRef.current){setIsPlaying(false);}
 
       setIsScriptExisting(false);
       setIsInfographicExisting(false);
@@ -1410,7 +1416,7 @@ export function TabletLayout() {
 
       audioRef.current.currentTime = currentTime;
 
-      if(!isPlaying){
+      if(!isPlayingRef.current){
         if (playPauseBtnRef.current) {
           playPauseBtnRef.current.click(); // Trigger the button click event
         }
@@ -1514,7 +1520,7 @@ export function TabletLayout() {
     const currentCaption = audioCaptions.current[currentCaptionIndex];
     audioRef.current.currentTime = currentCaption.time;      
 
-    if (!isPlaying && playPauseBtnRef.current) {
+    if (!isPlayingRef.current && playPauseBtnRef.current) {
       playPauseBtnRef.current.click(); // Trigger the button click event
     }    
 
@@ -2266,18 +2272,20 @@ export function TabletLayout() {
 
   const toggleAudio = async () => {
     if(isAudioExisting === false){ return; }
+    const currentlyPlaying = isPlayingRef.current;
+
     if (audioRef.current && isHidden) {
-      if (isPlaying) {
+      if (currentlyPlaying) {
         //audio should be paused when User speaks or LLM speaks
         audioRef.current.pause();
       } else {
         //start playing or resuming audio
         audioRef.current.play().catch(() => {});
       }
-      setIsPlaying(!isPlaying);
+      setIsPlaying(!currentlyPlaying);
     }
     if(videoRef.current && !isHidden) {
-      if (isPlaying) {
+      if (currentlyPlaying) {
         videoRef.current.pause();
       } else {
         try {
@@ -2286,7 +2294,7 @@ export function TabletLayout() {
           console.error('Error playing video:', error);
         }
       }
-      setIsPlaying(!isPlaying);
+      setIsPlaying(!currentlyPlaying);
     }
   };
 
@@ -2479,7 +2487,7 @@ export function TabletLayout() {
     isShadowModeRef.current = true;
     setIsShadowMode(true);
 
-    if (isPlaying && audioRef.current) {
+    if (isPlayingRef.current && audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
     }
@@ -2523,7 +2531,7 @@ export function TabletLayout() {
       img.src = `/play/${currentMagazineId}/${currentMagazineId}-Infographic.png`;
     }
 
-    if (isPlaying && audioRef.current) {
+    if (isPlayingRef.current && audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
     }
@@ -2848,6 +2856,9 @@ export function TabletLayout() {
   const switchAudioCopilotOff = useCallback(async () => {
     setIsConnected(false);
 
+    // Save current audio state before disconnecting
+    const audioWasPlaying = isPlayingRef.current && audioRef.current && !audioRef.current.paused;
+
     const client = clientRef.current;
     client.disconnect();
 
@@ -2855,7 +2866,13 @@ export function TabletLayout() {
     await wavRecorder.end();
 
     const wavStreamPlayer = wavStreamPlayerRef.current;
-    await wavStreamPlayer.interrupt();   
+    await wavStreamPlayer.interrupt();
+
+    // Restore magazine audio playback if it was playing before disconnect
+    if (audioWasPlaying && audioRef.current) {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
 
   }, []);
 
@@ -3244,7 +3261,6 @@ export function TabletLayout() {
     client.on('conversation.updated', async ({ item, delta }: any) => {
       // hanks - Resume audio when item is 'completed'
       wavStreamPlayer.setItemStatus(item.status);
-      wavStreamPlayer.isHidden = isHidden;
       // hanks
 
       if (delta?.audio) {
@@ -3317,7 +3333,13 @@ export function TabletLayout() {
 
       // Connect to microphone
       if(wavRecorder.processor === null) {
-        await wavRecorder.begin();
+        try {
+          await wavRecorder.begin();
+        } catch (err) {
+          console.error('Microphone init failed:', err);
+          alert('No microphone detected. Please connect a microphone and try again.');
+          return;
+        }
       }
 
       // Connect to audio output
