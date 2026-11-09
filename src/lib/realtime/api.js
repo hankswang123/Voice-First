@@ -1,15 +1,33 @@
 import { RealtimeEventHandler } from './event_handler.js';
 import { RealtimeUtils } from './utils.js';
 
+/**
+ * Provider configuration: endpoint URLs and default models.
+ * Add new providers here — the rest of the code routes on `this.provider`.
+ */
+const PROVIDER_CONFIG = {
+  openai: {
+    url: 'wss://api.openai.com/v1/realtime',
+    defaultModel: 'gpt-realtime-mini',
+  },
+  boson: {
+    url: 'wss://api.boson.ai/v1/realtime',
+    defaultModel: 'higgs-realtime',
+  },
+};
+
 export class RealtimeAPI extends RealtimeEventHandler {
   /**
    * Create a new RealtimeAPI instance
-   * @param {{url?: string, apiKey?: string, dangerouslyAllowAPIKeyInBrowser?: boolean, debug?: boolean}} [settings]
+   * @param {{url?: string, apiKey?: string, provider?: string, dangerouslyAllowAPIKeyInBrowser?: boolean, debug?: boolean}} [settings]
    * @returns {RealtimeAPI}
    */
-  constructor({ url, apiKey, dangerouslyAllowAPIKeyInBrowser, debug } = {}) {
+  constructor({ url, apiKey, provider, dangerouslyAllowAPIKeyInBrowser, debug } = {}) {
     super();
-    this.defaultUrl = 'wss://api.openai.com/v1/realtime';
+    this.provider = provider || 'openai';
+    const cfg = PROVIDER_CONFIG[this.provider] || PROVIDER_CONFIG.openai;
+    this.defaultUrl = cfg.url;
+    this.defaultModel = cfg.defaultModel;
     this.url = url || this.defaultUrl;
     this.apiKey = apiKey || null;
     this.debug = !!debug;
@@ -59,7 +77,7 @@ export class RealtimeAPI extends RealtimeEventHandler {
   async connect({ model } = {}) {
     model = model
       || (typeof process !== 'undefined' && process.env && process.env.REALTIME_MODEL)
-      || 'gpt-realtime-mini';
+      || this.defaultModel;
     if (!this.apiKey && this.url === this.defaultUrl) {
       console.warn(`No apiKey provided for connection to "${this.url}"`);
     }

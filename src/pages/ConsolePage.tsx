@@ -608,10 +608,12 @@ export function ConsolePage() {
   const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = event.target.value;
   
-    if( newModel === 'GPT-Realtime' || newModel === 'GPT-Realtime-Mini' ){
+    if( newModel === 'GPT-Realtime' || newModel === 'GPT-Realtime-Mini' || newModel === 'Higgs-Realtime' ){
 
       if(newModel === 'GPT-Realtime'){
         setChatModel('gpt-realtime');
+      }else if(newModel === 'Higgs-Realtime'){
+        setChatModel('higgs-realtime');
       }else{
         setChatModel('gpt-4o-mini-realtime-preview-2024-12-17');
       }      
@@ -4232,11 +4234,14 @@ export function ConsolePage() {
                   </option>   
                   <option key={2} value={'GPT-Realtime-Mini'}>
                       {'GPT-Realtime-Mini - Cheapest'}
-                  </option>                                                   
-                  <option key={3} value={'GPT-4o'}>
+                  </option>
+                  <option key={3} value={'Higgs-Realtime'}>
+                      {'Higgs-Realtime (Boson AI)'}
+                  </option>
+                  <option key={4} value={'GPT-4o'}>
                       {'GPT-4o'}
                   </option>
-                  <option key={4} value={'DeepSeek'}>
+                  <option key={5} value={'DeepSeek'}>
                       {'DeepSeek'}
                   </option>                  
                 </select>                          
