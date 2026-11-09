@@ -294,7 +294,9 @@ export class RealtimeClient extends RealtimeEventHandler {
         const jsonArguments = JSON.parse(tool.arguments);
         const toolConfig = this.tools[tool.name];
         if (!toolConfig) {
-          throw new Error(`Tool "${tool.name}" has not been added`);
+          // Server-side tools (e.g. Boson's web_search) are handled by the
+          // provider — the client must not send output or response.create.
+          return;
         }
         const result = await toolConfig.handler(jsonArguments);
         this.realtime.send('conversation.item.create', {
@@ -582,6 +584,12 @@ export class RealtimeClient extends RealtimeEventHandler {
       delete session.input_audio_transcription;
       delete session.temperature;
       delete session.max_response_output_tokens;
+      // Auto-inject Boson's built-in web_search tool (server-side, no client handler needed)
+      const hasWebSearch = (session.tools || []).some(t => t.type === 'web_search');
+      if (!hasWebSearch) {
+        session.tools = session.tools || [];
+        session.tools.push({ type: 'web_search' });
+      }
     }
     if (this.realtime.isConnected()) {
       this.realtime.send('session.update', { session });

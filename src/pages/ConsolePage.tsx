@@ -4235,13 +4235,13 @@ export function ConsolePage() {
                   <option key={2} value={'GPT-Realtime-Mini'}>
                       {'GPT-Realtime-Mini - Cheapest'}
                   </option>
-                  <option key={5} value={'Higgs-Realtime'}>
+                  <option key={3} value={'Higgs-Realtime'}>
                       {'Higgs-Realtime (Boson AI)'}
-                  </option>                                                   
-                  <option key={3} value={'GPT-4o'}>
+                  </option>
+                  <option key={4} value={'GPT-4o'}>
                       {'GPT-4o'}
                   </option>
-                  <option key={4} value={'DeepSeek'}>
+                  <option key={5} value={'DeepSeek'}>
                       {'DeepSeek'}
                   </option>                  
                 </select>                          
