@@ -129,30 +129,28 @@ export class WavStreamPlayer {
         this.trackSampleOffsets[requestId] = { trackId, offset, currentTime };
       } else if (event === 'stop_by_completion') {
         // hanks
-        // 'stop_by_completion' will be triggered together with 'stop' for each delta chunk finished playing
-        // BUT, audio will be resumed only after item with 'completed' staus received after the last chunk 
-        if(this.itemStatus === 'completed' && this.newsAudio && this.isHidden) {
+        // After TTS finishes, always try to resume magazine audio/video playback
+        // regardless of visibility — the user was listening before the copilot
+        // interaction, so we should restore that state.
+        // The isHidden check was removed because it prevented legitimate resume
+        // paths when the video player was visible (audio player hidden).
+        if(this.itemStatus === 'completed' && this.newsAudio) {
           if(this.askStop) {
             this.newsAudio.pause();
-            //this.askStop = false;
           } else {
-            this.newsAudio.play();
-            // Resume playing the audio from the start of the current caption
-            // bug: only start playing from the beginning of the whole audio
-            //this.repeatCurrent();
-            this.setIsPlaying(true);            
+            this.newsAudio.play().catch(() => {});
+            this.setIsPlaying(true);
           }
         }
 
-        if(this.itemStatus === 'completed' && this.newsVideo && !this.isHidden) {
+        if(this.itemStatus === 'completed' && this.newsVideo) {
           if(this.askStop) {
             this.newsVideo.pause();
-            //this.askStop = false;
           } else {
-            this.newsVideo.play();
-            this.setIsPlaying(true);            
+            this.newsVideo.play().catch(() => {});
+            this.setIsPlaying(true);
           }
-        }          
+        }
         // hanks
       }
     };
