@@ -85,6 +85,87 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));  // Increased limit for audio data in base64
 
+// ==================== PI AGENT PROXY ====================
+// Proxy /api/pi/* to the local Pi Web server to avoid CORS.
+// Pi Web must be running on PI_WEB_URL (default http://127.0.0.1:30141).
+const PI_WEB_URL = process.env.PI_WEB_URL || 'http://127.0.0.1:30141';
+
+// POST proxy: /api/pi/agent/new, /api/pi/agent/:id, etc.
+app.post('/api/pi/{*splat}', async (req, res) => {
+  const parts = req.params.splat;
+  const piPath = Array.isArray(parts) ? parts.join('/') : parts;
+  try {
+    const upstream = await fetch(`${PI_WEB_URL}/api/${piPath}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (e) {
+    console.error(`[Pi Proxy] POST /api/${piPath} failed:`, e.message);
+    res.status(502).json({ error: 'Pi Web not reachable', details: e.message });
+  }
+});
+
+// SSE proxy: /api/pi/agent/:id/events → stream through to browser
+app.get('/api/pi/agent/:id/events', (req, res) => {
+  const eventsUrl = `${PI_WEB_URL}/api/agent/${req.params.id}/events`;
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Use native fetch to stream the upstream SSE
+  fetch(eventsUrl)
+    .then(upstream => {
+      if (!upstream.ok) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: `Pi Web returned ${upstream.status}` })}\n\n`);
+        res.end();
+        return;
+      }
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+
+      function pump() {
+        reader.read().then(({ done, value }) => {
+          if (done || res.destroyed) {
+            res.end();
+            return;
+          }
+          res.write(decoder.decode(value, { stream: true }));
+          pump();
+        }).catch(() => res.end());
+      }
+      pump();
+
+      req.on('close', () => {
+        reader.cancel().catch(() => {});
+      });
+    })
+    .catch(e => {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: e.message })}\n\n`);
+      res.end();
+    });
+});
+
+// GET proxy: /api/pi/sessions, /api/pi/agent/running, etc.
+app.get('/api/pi/{*splat}', async (req, res) => {
+  const parts = req.params.splat;
+  const piPath = Array.isArray(parts) ? parts.join('/') : parts;
+  // Skip the SSE route (already handled above)
+  if (/^agent\/[^/]+\/events$/.test(piPath)) return;
+  try {
+    const upstream = await fetch(`${PI_WEB_URL}/api/${piPath}`);
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: 'Pi Web not reachable', details: e.message });
+  }
+});
+
+console.log(`[Pi Proxy] Forwarding /api/pi/* → ${PI_WEB_URL}/api/*`);
+
 // Dynamic magazines (folder names under public/play)
 app.get("/api/magazines", (req, res) => {
   try {

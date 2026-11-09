@@ -7,6 +7,7 @@ import { OpenAI } from "openai";
 import { AssistantStreamEvent } from "openai/resources/beta";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
 import { RealtimeClient, type ItemType } from '../../lib/realtime/index.js';
+import { PiAgent } from '../../lib/pi-agent.js';
 
 import { Button } from '../button/Button';
 import { Mic, MicOff, Send, Trash2 } from 'react-feather';
@@ -265,6 +266,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
   const threadIdRef = useRef<string | null>(null);
+  const piAgentRef = useRef<PiAgent | null>(null);
   const [items, setItems] = useState<ItemType[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [chatModel, setChatModel] = useState("GPT-Realtime");
@@ -581,6 +583,36 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
         setMessages((prev) => [...prev, { role: "user", text: userInput }]);
         sendMessage(userInput);
         setInputDisabled(true);
+        break;
+
+      case "Pi-Agent":
+        setMessages((prev) => [...prev, { role: "user", text: userInput }]);
+        setUserInput("");
+        setInputDisabled(true);
+        try {
+          if (!piAgentRef.current) {
+            piAgentRef.current = new PiAgent();
+          }
+          const pi = piAgentRef.current;
+          // Create or reuse session
+          if (!pi.sessionId) {
+            await pi.createSession(userInput);
+          } else {
+            await pi.sendMessage(userInput);
+          }
+          // Set up streaming callbacks
+          appendMessage("assistant", "");
+          pi.onDelta = (delta) => appendToLastMessage(delta);
+          pi.onSettled = () => setInputDisabled(false);
+          pi.onError = (err) => {
+            appendToLastMessage(`\n\n⚠️ Error: ${err}`);
+            setInputDisabled(false);
+          };
+          pi.streamEvents();
+        } catch (err) {
+          appendMessage("assistant", `⚠️ Pi Agent error: ${err.message}. Is Pi Web running on port 30141?`);
+          setInputDisabled(false);
+        }
         break;
 
       case "DeepSeek":

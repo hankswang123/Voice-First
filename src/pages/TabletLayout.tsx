@@ -4362,6 +4362,9 @@ export function TabletLayout() {
                   </option>
                   <option key={5} value={'DeepSeek'}>
                       {'DeepSeek'}
+                  </option>
+                  <option key={6} value={'Pi-Agent'}>
+                      {'Pi Agent (Tools + Code)'}
                   </option>                  
                 </select>                          
               </div>               
