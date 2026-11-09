@@ -968,15 +968,20 @@ app.use((req, res, next) => {
 
 const serverInstance = app.listen(port, () => {
                 console.log(`Server running on port ${port}`);
-                if(process.env.OPENAI_API_KEY){
+                const realtimeProvider = (process.env.REALTIME_PROVIDER || 'openai').toLowerCase();
+                const realtimeKey = realtimeProvider === 'boson'
+                    ? process.env.BOSON_API_KEY
+                    : process.env.OPENAI_API_KEY;
+                if(realtimeKey){
                     try {
-                        const relay = new RealtimeRelay(process.env.OPENAI_API_KEY);
+                        const relay = new RealtimeRelay(realtimeKey, { provider: realtimeProvider });
                         relay.attach(serverInstance, '/realtime');
-                        console.log('Realtime relay attached at /realtime');
+                        console.log(`Realtime relay attached at /realtime (provider: ${realtimeProvider})`);
                     } catch (e){
                         console.error('Failed to attach realtime relay:', e.message);
                     }
                 } else {
-                    console.warn('OPENAI_API_KEY not set; realtime relay not started.');
+                    const envVar = realtimeProvider === 'boson' ? 'BOSON_API_KEY' : 'OPENAI_API_KEY';
+                    console.warn(`${envVar} not set; realtime relay not started (provider: ${realtimeProvider}).`);
                 }
 });

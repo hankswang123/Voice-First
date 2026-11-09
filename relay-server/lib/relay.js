@@ -2,8 +2,13 @@ import { WebSocketServer } from 'ws';
 import { RealtimeClient } from '../../src/lib/realtime/index.js';
 
 export class RealtimeRelay {
-  constructor(apiKey) {
+  /**
+   * @param {string} apiKey
+   * @param {{ provider?: string }} [options]
+   */
+  constructor(apiKey, { provider = 'openai' } = {}) {
     this.apiKey = apiKey;
+    this.provider = provider;
     this.sockets = new WeakMap();
     this.wss = null;
     // Track the path we mounted on (so connectionHandler can validate correctly)
@@ -41,8 +46,8 @@ export class RealtimeRelay {
     }
 
     // Instantiate new client
-    this.log(`Connecting with key "${this.apiKey.slice(0, 3)}..."`);
-    const client = new RealtimeClient({ apiKey: this.apiKey });
+    this.log(`Connecting with key "${this.apiKey.slice(0, 3)}..." (provider: ${this.provider})`);
+    const client = new RealtimeClient({ apiKey: this.apiKey, provider: this.provider });
 
     // Relay: OpenAI Realtime API Event -> Browser Event
     client.realtime.on('server.*', (event) => {
@@ -73,16 +78,16 @@ export class RealtimeRelay {
     });
     ws.on('close', () => client.disconnect());
 
-    // Connect to OpenAI Realtime API
+    // Connect to the configured Realtime API provider
     try {
-      this.log(`Connecting to OpenAI...`);
+      this.log(`Connecting to ${this.provider} Realtime API...`);
       await client.connect();
     } catch (e) {
-      this.log(`Error connecting to OpenAI: ${e.message}`);
+      this.log(`Error connecting to ${this.provider}: ${e.message}`);
       ws.close();
       return;
     }
-    this.log(`Connected to OpenAI successfully!`);
+    this.log(`Connected to ${this.provider} successfully!`);
     while (messageQueue.length) {
       messageHandler(messageQueue.shift());
     }

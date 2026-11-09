@@ -191,8 +191,9 @@ export class RealtimeClient extends RealtimeEventHandler {
    * Create a new RealtimeClient instance
    * @param {{url?: string, apiKey?: string, dangerouslyAllowAPIKeyInBrowser?: boolean, debug?: boolean}} [settings]
    */
-  constructor({ url, apiKey, dangerouslyAllowAPIKeyInBrowser, debug } = {}) {
+  constructor({ url, apiKey, provider, dangerouslyAllowAPIKeyInBrowser, debug } = {}) {
     super();
+    this.provider = provider || 'openai';
     this.defaultSessionConfig = {
       modalities: ['text', 'audio'],
       instructions: '',
@@ -221,6 +222,7 @@ export class RealtimeClient extends RealtimeEventHandler {
     this.realtime = new RealtimeAPI({
       url,
       apiKey,
+      provider: this.provider,
       dangerouslyAllowAPIKeyInBrowser,
       debug,
     });
@@ -535,29 +537,51 @@ export class RealtimeClient extends RealtimeEventHandler {
     );
     const session = { ...this.sessionConfig };
     session.tools = useTools;
-    // GA (gpt-realtime-mini) rejects several Beta session fields as unknown
-    // parameters. Strip them before sending so session.update does not error.
-    // Fields confirmed rejected by GA: modalities, voice, input_audio_format,
-    // output_audio_format, input_audio_transcription, turn_detection,
-    // temperature, max_response_output_tokens.
-    const GA_UNSUPPORTED_SESSION_FIELDS = [
-      'modalities',
-      'voice',
-      'input_audio_format',
-      'output_audio_format',
-      'input_audio_transcription',
-      'turn_detection',
-      'temperature',
-      'max_response_output_tokens',
-    ];
-    for (const key of GA_UNSUPPORTED_SESSION_FIELDS) {
-      delete session[key];
-    }
-    // OpenAI Realtime GA requires session.type. Default to "realtime"
-    // (audio realtime); the alternative "transcription" is not used by
-    // this client. See spec: docs/superpowers/specs/2026-05-22-realtime-ga-migration-design.md
-    if (!session.type) {
-      session.type = 'realtime';
+    if (this.provider === 'openai') {
+      // GA (gpt-realtime-mini) rejects several Beta session fields as unknown
+      // parameters. Strip them before sending so session.update does not error.
+      const GA_UNSUPPORTED_SESSION_FIELDS = [
+        'modalities',
+        'voice',
+        'input_audio_format',
+        'output_audio_format',
+        'input_audio_transcription',
+        'turn_detection',
+        'temperature',
+        'max_response_output_tokens',
+      ];
+      for (const key of GA_UNSUPPORTED_SESSION_FIELDS) {
+        delete session[key];
+      }
+      // OpenAI Realtime GA requires session.type.
+      if (!session.type) {
+        session.type = 'realtime';
+      }
+    } else if (this.provider === 'boson') {
+      // Higgs Realtime uses an OpenAI-compatible protocol but wraps
+      // audio config under `session.audio` and rejects unknown top-level fields.
+      delete session.type;
+      // Map OpenAI voice names to Boson; fall back to 'default'
+      const BOSON_VOICES = ['default', 'marcus', 'eleanor', 'mia', 'oliver'];
+      const requestedVoice = session.voice || 'default';
+      const bosonVoice = BOSON_VOICES.includes(requestedVoice) ? requestedVoice : 'default';
+      session.audio = {
+        input: {
+          turn_detection: session.turn_detection || { type: 'server_vad' },
+        },
+        output: {
+          voice: bosonVoice,
+        },
+      };
+      // Strip all top-level fields Boson does not recognize
+      delete session.modalities;
+      delete session.turn_detection;
+      delete session.voice;
+      delete session.input_audio_format;
+      delete session.output_audio_format;
+      delete session.input_audio_transcription;
+      delete session.temperature;
+      delete session.max_response_output_tokens;
     }
     if (this.realtime.isConnected()) {
       this.realtime.send('session.update', { session });
