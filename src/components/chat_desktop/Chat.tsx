@@ -808,7 +808,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
         ref={inputFormRef}
         id="inputForm"
         onSubmit={handleSubmit}
-        className={`${styles.inputForm} ${!realtimeClient.isConnected() ? 'no-connection' : ''}`}
+        className={`${styles.inputForm} ${!realtimeClient.isConnected() && chatModel !== 'Pi-Agent' ? 'no-connection' : ''}`}
         style={{border: '2px solid #ccc',marginLeft: '0px', marginRight: "1px", position: 'relative'}}
       >
         {/* Clear chat history button - positioned above the Mic button */}
@@ -846,7 +846,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           className={styles.input}
           value={userInput}
           onChange={handleInputOnChange}
-          placeholder={realtimeClient.isConnected()? "Ask me anything..." : "Connect to ask anything!"}
+          placeholder={realtimeClient.isConnected() || chatModel === 'Pi-Agent' ? "Ask me anything..." : "Connect to ask anything!"}
           style={{marginRight: '1px', border: 'none', outline: 'none'}}
           disabled={(deviceType.isTablet || deviceType.isMobile) ? true : false}
         />  
@@ -854,14 +854,14 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
           title={realtimeClient.isConnected() ? "" : "Connect to talk"}
           type="submit"
           className={styles.button}
-          disabled={realtimeClient.isConnected() ? false : true}
+          disabled={chatModel === 'Pi-Agent' ? false : !realtimeClient.isConnected()}
           label={''}
           iconPosition={'end'}
           icon={ getIsMuted() ? MicOff : Mic}          
           style={{fontSize: 'medium', marginLeft: '1px', marginRight: '1px', display: userInput.trim() === '' ? 'flex' :'none' }}
         />                        
         <Button
-              title={realtimeClient.isConnected() ? "" : "Connect to chat"}
+              title={realtimeClient.isConnected() || chatModel === 'Pi-Agent' ? "" : "Connect to chat"}
               type="submit"
               id="submitButton"
               className={styles.button}
