@@ -566,6 +566,7 @@ const Chat = forwardRef(({ functionCallHandler = () => Promise.resolve(""), getI
     switch (chatModel) {
       case "GPT-Realtime":
       case "GPT-Realtime-Mini":
+      case "Higgs-Realtime":
         if(realtimeClient.isConnected()){
           realtimeClient.sendUserMessageContent([
             {
